@@ -1,0 +1,136 @@
+*&---------------------------------------------------------------------*
+*& Report ZMMC045
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zmmc045  NO STANDARD PAGE HEADING MESSAGE-ID zmm03.
+************************************************************************
+*  作者:              FENGWL
+*  |开始日期:         20210105
+*  |描述:            第三方服务扣款发送OA审批接口
+************************************************************************
+*  |版本号 日期   作者   修改描述 功能更改说明书
+************************************************************************
+*&---------------------------------------------------------------------*
+*& DEFINE INCLUDE
+*&---------------------------------------------------------------------*
+INCLUDE zmmc045_top.
+
+
+INCLUDE zmmc045_o01.
+
+
+INCLUDE zmmc045_i01.
+
+
+INCLUDE zmmc045_f01.
+
+
+
+*----------------------------------------------------------------------*
+* INITIALIZATION
+*----------------------------------------------------------------------*
+INITIALIZATION.
+*  PERFORM frm_intzaion_value ."添加按钮.  """"20210316 已搬迁至ZMMC044
+  CREATE OBJECT gc_event_handler3."实例化
+  gc_event_handler3->generate_output( ). "表格
+
+
+
+*----------------------------------------------------------------------*
+* AT SELECTION-SCREEN ON VALUE-REQUEST
+*----------------------------------------------------------------------*
+
+*----  单据编号
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_djbh.
+  PERFORM frm_set_f4_help USING 'P_DJBH'.
+
+
+*----  法务合同号
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR s_zfwht-low.
+  PERFORM frm_set_zfwht_f4 USING 'S_ZFWHT'.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR s_zfwht-high.
+  PERFORM frm_set_zfwht_f4 USING 'S_ZFWHT'.
+
+
+****----  供应商
+***AT SELECTION-SCREEN ON VALUE-REQUEST FOR s_zsgdw-low.
+***  PERFORM frm_set_zsgdw_f4 USING 'S_ZSGDW'.
+***
+***AT SELECTION-SCREEN ON VALUE-REQUEST FOR s_zsgdw-high.
+***  PERFORM frm_set_zsgdw_f4 USING 'S_ZSGDW'.
+
+*----  创建人员
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR s_zcjry-low.
+  PERFORM frm_set_zcjry_f4 USING 'S_ZCJRY'.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR s_zcjry-high.
+  PERFORM frm_set_zcjry_f4 USING 'S_ZCJRY'.
+
+*----------------------------------------------------------------------*
+* AT SELECTION-SCREEN OUTPUT
+*----------------------------------------------------------------------*
+AT SELECTION-SCREEN OUTPUT.
+
+  IF p_create EQ abap_true.
+    LOOP AT SCREEN.
+      CASE  screen-group1.
+        WHEN 'M1'.
+          screen-active = 0.
+      ENDCASE.
+      MODIFY SCREEN.
+    ENDLOOP.
+    PERFORM frm_free_init.
+
+  ELSEIF p_modify EQ abap_true OR p_dis EQ abap_true.
+    LOOP AT SCREEN.
+      CASE  screen-group1.
+        WHEN 'M1'.
+          screen-active = 1.
+      ENDCASE.
+      MODIFY SCREEN.
+    ENDLOOP.
+  ENDIF.
+
+*----------------------------------------------------------------------*
+* AT SELECTION-SCREEN
+*----------------------------------------------------------------------*
+*****AT SELECTION-SCREEN .
+*****  PERFORM frm_chose_button. "按钮方法     """"20210316 已搬迁至ZMMC044
+
+*&---------------------------------------------------------------------*
+* START-OF-SELECTION
+*&---------------------------------------------------------------------*
+START-OF-SELECTION.
+
+  PERFORM frm_get_init.
+
+
+  CASE abap_true.
+    WHEN p_create.
+      gv_mode = gc_mode_create.
+      PERFORM frm_auth_chk USING 'CREATE'.  "权限控制
+      PERFORM frm_init.
+      CALL SCREEN 9000.
+    WHEN p_modify.
+      gv_mode = gc_mode_change.
+      PERFORM frm_auth_chk USING 'MODIFY'.
+      gc_event_handler3->get_list_data( )."获取数据
+      gc_event_handler3->double_click( )."
+      gc_event_handler3->handle_toolbar( )."
+      gc_event_handler3->handle_user_command( )."
+    WHEN p_dis.
+      gv_mode = gc_mode_display.
+      PERFORM frm_auth_chk USING 'DIS'.
+      gc_event_handler3->get_list_data( )."获取数据
+      gc_event_handler3->double_click( )."
+      gc_event_handler3->handle_toolbar( )."
+      gc_event_handler3->handle_user_command( )."
+    WHEN OTHERS.
+  ENDCASE.
+
+
+*&---------------------------------------------------------------------*
+* END-OF-SELECTION
+*&---------------------------------------------------------------------*

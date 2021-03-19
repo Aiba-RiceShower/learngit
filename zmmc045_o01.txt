@@ -1,0 +1,30 @@
+*&---------------------------------------------------------------------*
+*& 包含               ZPSI003_O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_9000 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_9000 OUTPUT.
+  DATA: lt_function TYPE TABLE OF sy-ucomm.
+  CASE gv_mode.
+    WHEN gc_mode_display.
+      lt_function = VALUE #( BASE lt_function ( '&SAVE' ) ).
+      lt_function = VALUE #( BASE lt_function ( '&CHECK' ) ).
+      lt_function = VALUE #( BASE lt_function ( '&TO_OA' ) ).
+      lt_function = VALUE #( BASE lt_function ( '&CANCL' ) ).
+      SET PF-STATUS 'PS9001' EXCLUDING lt_function.
+
+    WHEN gc_mode_change.
+      SET PF-STATUS 'PS9001'.
+    WHEN gc_mode_create.
+      SET PF-STATUS 'PS9001'.
+    WHEN OTHERS.
+  ENDCASE.
+
+  SET TITLEBAR ''.
+  PERFORM frm_alv_grid_9000.
+  PERFORM frm_alv_grid_9001.
+  PERFORM frm_modify_screen.
+ENDMODULE.

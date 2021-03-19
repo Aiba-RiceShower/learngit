@@ -1,0 +1,4880 @@
+*&---------------------------------------------------------------------*
+*& 包含               ZMMC045_F01
+*&---------------------------------------------------------------------*
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_GET_INIT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_get_init .
+
+  SELECT * FROM t001 INTO CORRESPONDING FIELDS OF TABLE gt_t001 WHERE spras = 1.
+  SELECT * FROM cskt INTO CORRESPONDING FIELDS OF TABLE gt_cskt WHERE spras = 1.
+  SELECT * FROM prps INTO CORRESPONDING FIELDS OF TABLE gt_prps .
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_FREE_INIT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_free_init.
+*----  点选创建时清除掉不用的容器和网格，还有内表 START
+  IF gs_grid_list IS NOT INITIAL .
+    CALL METHOD gs_grid_list->free.
+    CLEAR gs_grid_list.
+  ENDIF.
+
+  IF g_docking_container_k IS NOT INITIAL.
+    CALL METHOD g_docking_container_k->free.
+    CLEAR g_docking_container_k.
+  ENDIF.
+
+  IF gt_dj_list[] IS NOT INITIAL.
+    CLEAR gt_dj_list[].
+  ENDIF.
+
+  IF gs_ps011 IS NOT INITIAL.
+    CLEAR gs_ps011 .
+  ENDIF.
+
+  IF gt_ztfile IS NOT INITIAL.
+    CLEAR gt_ztfile.
+  ENDIF.
+
+  IF gt_fwitem  IS NOT INITIAL.
+    CLEAR gt_fwitem .
+  ENDIF.
+*----  点选创建时清除掉不用的容器和网格，还有内表 END
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FRM_INTZAION_VALUE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_intzaion_value .
+
+  functxt-icon_id   = icon_biw_info_catalog.
+  functxt-icon_text = '科目与扣款费用类型关系表'.
+  sscrfields-functxt_01 = functxt.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Module  F4_ZDJBH  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM frm_set_f4_help USING uv_field TYPE help_info-dynprofld.
+  TYPES: BEGIN OF ty_zdjbh,
+           zdjbh  TYPE zedjbh,
+           zdjlxt TYPE zedjlxt,
+           zfwht  TYPE ze_zfwht,
+           zhtmc  TYPE ze_htmc,
+           zxmh   TYPE ps_pspid,
+           zxmm   TYPE zexmm,
+           zspzt1 TYPE zespzt,
+           zspzt2 TYPE zespztt,
+           zcjrq  TYPE zecjrq,
+           zcjsj  TYPE zecjsj,
+           zcjry  TYPE zecjry,
+         END OF ty_zdjbh.
+  DATA: lt_zdjbh   TYPE TABLE OF ty_zdjbh.
+  DATA:lt_return TYPE TABLE OF ddshretval.
+  CLEAR lt_zdjbh.
+
+  SELECT zdjbh,zdjlxt,zfwht,zhtmc,zxmh,zxmm,zspzt1,zspzt2,zcjrq,zcjsj,zcjry
+    FROM ztps0011
+    WHERE zdjlx1 EQ '71'
+    INTO TABLE @lt_zdjbh.
+  SORT lt_zdjbh BY zdjbh.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      retfield        = 'ZDJBH'
+      value_org       = 'S'
+      dynpprog        = sy-repid
+      dynpnr          = sy-dynnr
+      dynprofield     = uv_field
+    TABLES
+      value_tab       = lt_zdjbh
+      return_tab      = lt_return
+    EXCEPTIONS
+      parameter_error = 1
+      no_values_found = 2
+      OTHERS          = 3.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form FRM_SET_ZFWHT_F4
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM frm_set_zfwht_f4 USING uv_field TYPE help_info-dynprofld.
+  TYPES: BEGIN OF ty_zfwht,
+           zfwht TYPE ze_zfwht,
+           zhtls TYPE ze_htls,
+           zhtmc TYPE ze_htmc,
+         END OF ty_zfwht.
+  DATA: lt_zfwht   TYPE TABLE OF ty_zfwht.
+  DATA:lt_return TYPE TABLE OF ddshretval.
+  CLEAR lt_zfwht.
+
+  SELECT zfwht,zhtls,zhtmc
+    FROM ztmm_jbxx
+    WHERE statu IN (4,5,6,7)
+    AND spsta = 3
+    INTO TABLE @lt_zfwht.
+  SORT lt_zfwht BY zhtls.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      retfield        = 'ZFWHT'
+      value_org       = 'S'
+      dynpprog        = sy-repid
+      dynpnr          = sy-dynnr
+      dynprofield     = uv_field
+    TABLES
+      value_tab       = lt_zfwht
+      return_tab      = lt_return
+    EXCEPTIONS
+      parameter_error = 1
+      no_values_found = 2
+      OTHERS          = 3.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form FRM_SET_ZSGDW_F4
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM frm_set_zsgdw_f4 USING uv_field TYPE help_info-dynprofld.
+  TYPES: BEGIN OF ty_zsgdw,
+           lifnr TYPE lifnr,
+           name1 TYPE name1_gp,
+         END OF ty_zsgdw.
+  DATA: lt_zsgdw   TYPE TABLE OF ty_zsgdw.
+  DATA:lt_return TYPE TABLE OF ddshretval.
+  CLEAR lt_zsgdw.
+
+  SELECT lifnr,name1
+    FROM lfa1
+    WHERE spras = 1
+    INTO TABLE @lt_zsgdw.
+  SORT lt_zsgdw BY lifnr.
+  DELETE ADJACENT DUPLICATES FROM lt_zsgdw COMPARING lifnr.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      retfield        = 'LIFNR'
+      value_org       = 'S'
+      dynpprog        = sy-repid
+      dynpnr          = sy-dynnr
+      dynprofield     = uv_field
+    TABLES
+      value_tab       = lt_zsgdw
+      return_tab      = lt_return
+    EXCEPTIONS
+      parameter_error = 1
+      no_values_found = 2
+      OTHERS          = 3.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form FRM_SET_ZCJRY_F4
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM frm_set_zcjry_f4 USING uv_field TYPE help_info-dynprofld.
+  TYPES: BEGIN OF ty_zcjry,
+           name_text  TYPE ad_namtext,
+           bname      TYPE xubname,
+           persnumber TYPE ad_persnum,
+         END OF ty_zcjry.
+  TYPES: BEGIN OF ty_cjry,
+           name_text TYPE ad_namtext,
+           bname     TYPE xubname,
+         END OF ty_cjry.
+  DATA: lt_zcjry TYPE TABLE OF ty_zcjry,
+        lt_cjry  TYPE TABLE OF ty_cjry.
+  DATA:lt_return TYPE TABLE OF ddshretval.
+  CLEAR: lt_zcjry, lt_cjry.
+
+  SELECT a~name_text,u~bname,a~persnumber
+  FROM usr21 AS u
+  INNER JOIN adrp AS a ON u~persnumber = a~persnumber
+  INTO TABLE @lt_zcjry.
+  SORT lt_zcjry BY persnumber .
+  DELETE ADJACENT DUPLICATES FROM lt_zcjry COMPARING persnumber.
+
+  lt_cjry = lt_zcjry.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      retfield        = 'NAME_TEXT'
+      value_org       = 'S'
+      dynpprog        = sy-repid
+      dynpnr          = sy-dynnr
+      dynprofield     = uv_field
+    TABLES
+      value_tab       = lt_cjry
+      return_tab      = lt_return
+    EXCEPTIONS
+      parameter_error = 1
+      no_values_found = 2
+      OTHERS          = 3.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FRM_DYNPRO_SCREEN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_dynpro_screen .
+*  CHECK sy-dynnr = '1000'.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form FRM_CHOSE_BUTTON
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_chose_button .
+
+*按钮方法
+  CASE sscrfields-ucomm.
+    WHEN 'FC01'.
+      CALL TRANSACTION 'ZPSF011' .
+    WHEN OTHERS.
+  ENDCASE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FRM_RETRIEVE_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_retrieve_data.
+  gs_ps011-zxqbh = 'PSI012'.
+  APPEND gs_ps011 TO gt_ps011.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FRM_SEND_DATA_2_OA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_send_data_2_oa .
+  DATA:lv_zoaid TYPE string.
+  TYPES:BEGIN OF ty_zsfile.
+      INCLUDE TYPE zsfile.
+  TYPES:END OF ty_zsfile.
+  DATA: gt_zsfile TYPE TABLE OF ty_zsfile WITH HEADER LINE.
+  DATA:l_type TYPE zetype. """区分审批流
+  DATA: lt_fwitem TYPE TABLE OF ztps0011_fw WITH HEADER LINE.
+
+  DATA: lt_style  TYPE lvc_t_styl, ""控制单元格是否可编辑
+        lwa_style TYPE lvc_s_styl.
+
+**&---------------------------------------------------------------------*
+**  区分是否服务类扣款单配置流程ID
+**&---------------------------------------------------------------------*
+  IF gs_ps011-zdjlx1 EQ '71'. "第三方服务扣款单
+    l_type = '0002'.
+  ENDIF.
+
+
+**&---------------------------------------------------------------------*
+**  准备附件上传参数
+**&---------------------------------------------------------------------*
+  LOOP AT gt_fj_alv INTO gs_fj_alv.
+    APPEND INITIAL LINE TO gt_zsfile ASSIGNING FIELD-SYMBOL(<fs_zsfile>).
+    <fs_zsfile>-catalogid   = gs_fj_alv-zoaml.
+    <fs_zsfile>-docid       = gs_fj_alv-zoadocid.
+    <fs_zsfile>-workcode    = gs_fj_alv-crname.
+    <fs_zsfile>-filename    = gs_fj_alv-zfilenname.
+    <fs_zsfile>-filetype    = gs_fj_alv-zfiletype.
+  ENDLOOP.
+
+**&---------------------------------------------------------------------*
+**  准备第三方服务扣款行项目参数
+**&---------------------------------------------------------------------*
+  LOOP AT gt_fwitem INTO gs_fwitem WHERE zdel NE abap_true.
+    APPEND INITIAL LINE TO lt_fwitem ASSIGNING FIELD-SYMBOL(<fs_fwitem>).
+    MOVE-CORRESPONDING gs_fwitem TO <fs_fwitem>.
+  ENDLOOP.
+
+**&---------------------------------------------------------------------*
+** 1.0 发送数据到OA审批
+**&---------------------------------------------------------------------*
+  CALL FUNCTION 'Z_PO_SENT_FWOA'
+    EXPORTING
+      i_zifnam   = 'PSI011'
+      i_type     = l_type
+      i_username = sy-uname
+      i_zoaid    = gs_ps011-zoaid  " 原有 requestid 有值就是修改，0是创建
+    IMPORTING
+      e_oano     = lv_zoaid    "返回requestid
+      e_message  = gs_message
+    TABLES
+      it_head    = gt_ps011
+      it_item1   = gt_zsfile
+      it_item2   = lt_fwitem
+*     it_item3   =
+*     it_item4   =
+    .
+  IF lv_zoaid EQ 'success' AND gv_mode = gc_mode_change.
+  ELSE.
+    gs_ps011-zoaid = lv_zoaid.
+  ENDIF.
+*&---------------------------------------------------------------------*
+* 2.0 根据发送结果更新状态
+*&---------------------------------------------------------------------*
+  IF gs_message-msgty EQ 'S'.
+    UPDATE ztps0011
+       SET zspzt1 = '20' "审批中
+           zspzt2 = '审批中'
+           zoaid  = gs_ps011-zoaid
+     WHERE zdjlx1 = gs_ps011-zdjlx1
+       AND zdjbh  = gs_ps011-zdjbh.
+    gv_mode = gc_mode_display.
+    MESSAGE gs_message-message TYPE 'S'.
+
+    """"发送至泛微审批后第三方服务扣款行项目更改至不可编辑
+    LOOP AT gt_fwitem ASSIGNING FIELD-SYMBOL(<fs_alvdata>)."  WHERE chk EQ abap_true.
+
+      """"控制单元格编辑状态 start
+      CLEAR <fs_alvdata>-celltab.
+      lwa_style-fieldname = 'CHK'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZSKGS'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZSKGSMC'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'KOSTL'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'KTEXT'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'POSID'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'POST1'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZKKJE'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZGLFJE'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZYSL'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZYDL'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+      """"控制单元格编辑状态 end
+
+    ENDLOOP.
+  ELSE.
+    MESSAGE gs_message-message TYPE 'S' DISPLAY LIKE 'E'.
+    CLEAR gs_ps011-zoaid.
+    LOOP AT gt_ps011 INTO gs_ps011.
+      IF gs_ps011-zoaid CN '0123456789'.
+        DELETE TABLE gt_ps011 FROM gs_ps011.
+      ENDIF.
+    ENDLOOP.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FRM_CHECK_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_check_data .
+  DATA:lv_err TYPE string VALUE 'X'.
+  DATA:lv_index(5) TYPE c.
+*&---------------------------------------------------------------------*
+* 1.0 先判断是否已生成单据编号
+*&---------------------------------------------------------------------*
+  IF gs_ps011-zdjbh IS INITIAL.
+    MESSAGE TEXT-m05 TYPE 'E'.
+  ENDIF.
+
+
+*&---------------------------------------------------------------------*
+* 1.1 已发送OA审批的不允许再保存
+*&---------------------------------------------------------------------*
+  SELECT SINGLE *
+    FROM ztps0011
+    INTO @DATA(ls_ps011)
+   WHERE zdjlx1 = @gs_ps011-zdjlx1
+     AND zdjbh  = @gs_ps011-zdjbh.
+  IF sy-subrc = 0 AND ls_ps011-zspzt1 EQ '20'.
+    MESSAGE TEXT-m06 TYPE 'E'.
+  ENDIF.
+
+*&---------------------------------------------------------------------*
+* 1.2 扣款费用类型为水费，则“用水量（吨）”必输；如果“扣款费用类型”为电费，则“用电量（度）”必输
+*&---------------------------------------------------------------------*
+*  IF gs_ps011-zkkfylx = '2' AND gs_ps011-zysl IS INITIAL.
+*    MESSAGE TEXT-m08 TYPE 'E'.
+*  ELSEIF gs_ps011-zkkfylx = '2' AND gs_ps011-zydl IS NOT INITIAL.
+*    MESSAGE '扣款费用类型为水费时，用电量（度）不能输入' TYPE 'E'.
+*  ENDIF.
+
+*  IF gs_ps011-zkkfylx = '3' AND gs_ps011-zydl IS INITIAL.
+*    MESSAGE TEXT-m09 TYPE 'E'.
+*  ELSEIF gs_ps011-zkkfylx = '3' AND gs_ps011-zysl IS NOT INITIAL.
+*    MESSAGE '扣款费用类型为电费时，用水量（吨）不能输入' TYPE 'E'.
+*  ENDIF.
+
+*  IF gs_ps011-zkkfylx = '1' AND ( gs_ps011-zysl IS NOT INITIAL OR gs_ps011-zydl IS NOT INITIAL ).
+*    MESSAGE '扣款费用类型为扣款时，用电量（度）或用水量（吨）不能输入' TYPE 'E'.
+*  ENDIF.
+
+  IF gs_ps011-zspfl IS INITIAL.
+    MESSAGE '审批分类不能为空' TYPE 'E'.
+  ENDIF.
+
+  "校验合同是否生效
+  SELECT SINGLE zhtls INTO @DATA(ls_check_zhtls) FROM ztmm_jbxx WHERE zhtls = @gs_ps011-zhtbh AND statu IN ('4','5','6').
+  IF sy-subrc <> 0.
+    MESSAGE '合同未生效' TYPE 'E'.
+  ENDIF.
+
+  "校验公司是否重复提交
+  DATA(lt_fwitem) = gt_fwitem.
+  DATA(lt_dup_fw) = gt_fwitem.
+  SORT lt_fwitem BY zhtbh zskgs.
+  DELETE ADJACENT DUPLICATES FROM lt_fwitem COMPARING zskgs.
+  SORT lt_dup_fw BY zhtbh zskgs.
+
+  LOOP AT lt_fwitem ASSIGNING FIELD-SYMBOL(<fs_fw>).
+    DELETE lt_dup_fw WHERE zskgs = <fs_fw>-zskgs AND kostl = <fs_fw>-kostl AND posid = <fs_fw>-posid.
+
+  ENDLOOP.
+
+  SORT lt_dup_fw BY zskgs.
+
+
+  """校验必输项
+  CLEAR:gt_message[],lv_index,gv_error.
+  DATA(lv_title) = '第三方服务扣款行项目：行数 '.
+
+  LOOP AT gt_fwitem ASSIGNING FIELD-SYMBOL(<fs_fwitem>) WHERE zdel <> abap_true.
+
+
+    """校验公司代码是否与合同标的明细公司相符
+    IF <fs_fwitem>-zskgs IS ASSIGNED AND <fs_fwitem>-zskgs IS NOT INITIAL.
+      SELECT * INTO TABLE @DATA(lt_htbd) FROM ztmm_htbd WHERE zhtls = @<fs_fwitem>-zhtbh AND bukrs = @<fs_fwitem>-zskgs.
+      IF sy-subrc <> 0.
+        DATA(icon_a)  = icon_red_light.
+        lv_index = <fs_fwitem>-index.
+        CONDENSE lv_index NO-GAPS.
+        PERFORM append_message USING 'E' lv_title lv_index TEXT-m20 CHANGING gt_message icon_a.
+      ENDIF.
+    ENDIF.
+
+
+    """校验扣款金额必输
+    IF <fs_fwitem>-zkkje IS INITIAL.
+      icon_a  = icon_red_light.
+      lv_index = <fs_fwitem>-index.
+      CONDENSE lv_index NO-GAPS.
+      PERFORM append_message USING 'E' lv_title lv_index TEXT-m11 CHANGING gt_message icon_a.
+    ENDIF.
+
+
+    """校验扣款费用类型为水费电费时的必输项
+    IF gs_ps011-zkkfylx = '2'.
+      IF <fs_fwitem>-zysl IS INITIAL.
+        icon_a  = icon_red_light.
+        lv_index = <fs_fwitem>-index.
+        CONDENSE lv_index NO-GAPS.
+        PERFORM append_message USING 'E' lv_title lv_index TEXT-m08 CHANGING gt_message icon_a.
+      ENDIF.
+
+    ELSEIF  gs_ps011-zkkfylx = '3'.
+      IF <fs_fwitem>-zydl IS INITIAL.
+        icon_a  = icon_red_light.
+        lv_index = <fs_fwitem>-index.
+        CONDENSE lv_index NO-GAPS.
+        PERFORM append_message USING 'E' lv_title lv_index  TEXT-m09 CHANGING gt_message icon_a.
+      ENDIF.
+
+      """校验管理费金额扣款金额须大于管理费金额
+      IF  <fs_fwitem>-zglfje IS INITIAL.
+
+        icon_a  = icon_red_light.
+        lv_index = <fs_fwitem>-index.
+        CONDENSE lv_index NO-GAPS.
+        PERFORM append_message USING 'E' lv_title lv_index TEXT-m13 CHANGING gt_message icon_a.
+
+      ELSE.
+        IF <fs_fwitem>-zkkje IS NOT INITIAL AND <fs_fwitem>-zkkje < <fs_fwitem>-zglfje.
+
+          icon_a  = icon_red_light.
+          lv_index = <fs_fwitem>-index.
+          CONDENSE lv_index NO-GAPS.
+          PERFORM append_message USING 'E' lv_title lv_index TEXT-m14 CHANGING gt_message icon_a.
+
+        ENDIF.
+
+
+      ENDIF.
+
+    ELSEIF gs_ps011-zkkfylx = '4' OR gs_ps011-zkkfylx = '5' OR gs_ps011-zkkfylx = '6'.
+
+      IF <fs_fwitem>-kostl IS ASSIGNED AND <fs_fwitem>-kostl IS NOT INITIAL.
+        """"  成本中心与合同标的成本中心不校验  marked 20210316 start
+*****        SELECT SINGLE bukrs INTO @DATA(ls_bukrs) FROM csks WHERE kostl = @<fs_fwitem>-kostl.
+*****
+*****        IF sy-subrc = 0.
+*****          IF <fs_fwitem>-zskgs <> ls_bukrs.
+*****            icon_a  = icon_red_light.
+*****            lv_index = <fs_fwitem>-index.
+*****            CONDENSE lv_index NO-GAPS.
+*****            DATA(lv_txt15) = TEXT-m15 && '"'  && <fs_fwitem>-kostl  && '"' && TEXT-m16.
+*****            PERFORM append_message USING 'E' lv_title lv_index lv_txt15  CHANGING gt_message icon_a.
+*****
+*****          ENDIF.
+*****
+*****        ENDIF.
+        """"  成本中心与合同标的成本中心不校验  marked 20210316 end
+
+*---- WBS的公司代码校验
+        IF <fs_fwitem>-posid IS ASSIGNED AND <fs_fwitem>-posid IS NOT INITIAL.
+          SELECT SINGLE pbukr,fkstl INTO @DATA(ls_prps) FROM prps WHERE posid = @<fs_fwitem>-posid.
+
+          IF sy-subrc = 0.
+            IF <fs_fwitem>-zskgs <> ls_prps-pbukr.
+              icon_a  = icon_red_light.
+              lv_index = <fs_fwitem>-index.
+              CONDENSE lv_index NO-GAPS.
+              DATA(lv_txt19) = TEXT-m17 && '"' && <fs_fwitem>-posid && '"' && TEXT-m19.
+              PERFORM append_message USING 'E' lv_title lv_index lv_txt19 CHANGING gt_message icon_a.
+
+            ENDIF.
+
+*---- WBS的成本中心校验
+            IF <fs_fwitem>-kostl <> ls_prps-fkstl.
+              icon_a  = icon_red_light.
+              lv_index = <fs_fwitem>-index.
+              CONDENSE lv_index NO-GAPS.
+              DATA(lv_txt17) = TEXT-m17 && '"' && <fs_fwitem>-posid  && '"' && TEXT-m18.
+              PERFORM append_message USING 'E' lv_title lv_index lv_txt17 CHANGING gt_message icon_a.
+
+            ENDIF.
+
+          ENDIF.
+
+        ENDIF.
+
+      ENDIF.
+
+    ENDIF.
+
+    """校验公司是否重复提交
+    READ TABLE lt_dup_fw ASSIGNING FIELD-SYMBOL(<fs_dup_fw>) WITH KEY zskgs = <fs_fwitem>-zskgs kostl = <fs_fwitem>-kostl posid = <fs_fwitem>-posid BINARY SEARCH.
+    IF sy-subrc = 0.
+      icon_a  = icon_red_light.
+      lv_index = <fs_fwitem>-index.
+      CONDENSE lv_index NO-GAPS.
+      PERFORM append_message USING 'E' lv_title lv_index  TEXT-m12 CHANGING gt_message icon_a.
+    ENDIF.
+
+  ENDLOOP.
+
+
+  IF gt_message[] IS NOT INITIAL.
+    PERFORM pop_up_message.
+    gv_error = abap_true.
+  ENDIF.
+
+*&---------------------------------------------------------------------*
+* 1.3 保存或者发送泛微须校验扣款金额不能为0，否则不能发送泛微做审批。
+*&---------------------------------------------------------------------*
+*  IF gs_ps011-zhtje IS INITIAL.
+*    MESSAGE '扣款金额不能为0' TYPE 'E'.
+*  ENDIF.
+
+*  MESSAGE TEXT-m07 TYPE 'S'.
+
+
+*&---------------------------------------------------------------------*
+* 1.4 检查附件必输控制
+*&---------------------------------------------------------------------*
+  SELECT SINGLE * INTO @DATA(ls_ztfile_pz) FROM ztfile_pz WHERE zifnam = 'ZMMC045'.
+  IF sy-subrc = 0.
+    LOOP AT gt_fj_alv INTO DATA(ls_alv).
+      IF ls_alv-zfiletype = ls_ztfile_pz-zfiletype.
+        CLEAR:lv_err.
+      ENDIF.
+    ENDLOOP.
+    IF lv_err = 'X'.
+      MESSAGE TEXT-m10 TYPE 'E'.
+    ENDIF.
+  ENDIF.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FRM_SAVE_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_save_data .
+
+  DATA: lt_modify TYPE TABLE OF ztps0011.
+  DATA: lt_mod_fw TYPE TABLE OF ztps0011_fw.
+
+  APPEND INITIAL LINE TO lt_modify ASSIGNING FIELD-SYMBOL(<fs_modify>).
+  gs_ps011-zspzt1 = '10'.
+  PERFORM frm_get_domain_value_text USING gs_ps011-zspzt1
+                                          'ZDSPZT'
+                                          gs_ps011-zspzt2.
+  MOVE-CORRESPONDING gs_ps011 TO <fs_modify>.
+
+  """""保存第三方服务扣款行项目记录到表
+  IF gt_fwitem IS NOT INITIAL.
+    LOOP AT gt_fwitem ASSIGNING FIELD-SYMBOL(<fs_fwitem>).
+      APPEND INITIAL LINE TO lt_mod_fw ASSIGNING FIELD-SYMBOL(<fs_mod_fw>).
+      MOVE-CORRESPONDING <fs_fwitem> TO <fs_mod_fw>.
+    ENDLOOP.
+  ENDIF.
+
+  IF lt_modify IS NOT INITIAL AND lt_mod_fw IS NOT INITIAL.
+    MODIFY ztps0011 FROM TABLE lt_modify.
+    COMMIT WORK.
+    MODIFY ztps0011_fw FROM TABLE lt_mod_fw.
+    COMMIT WORK.
+    gv_mode = gc_mode_change.
+    MESSAGE TEXT-m03 TYPE 'S'.
+  ENDIF.
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Module  F4_ZDJLX  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE f4_zdjlx INPUT.
+  DATA: lt_list TYPE vrm_values.
+
+  CLEAR: lt_list.
+
+  lt_list = VALUE #( BASE lt_list
+*  ( key = '70' text = '合同扣款单' )
+                                   ( key = '71' text = '第三方服务扣款单' )
+
+   ).
+
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'gs_ps011-ZDJLX1'
+      values = lt_list.
+
+ENDMODULE.
+
+
+*&---------------------------------------------------------------------*
+*&      Module  f4_zztbm  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE f4_zztbm INPUT.
+
+  CLEAR: lt_list.
+
+  lt_list = VALUE #( BASE lt_list ( key = '1' text = '扣款' )
+                                  ( key = '2' text = '预扣款' )
+                                  ( key = '3' text = '预扣款转扣款' ) ).
+
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'gs_ps011-ZZTBM'
+      values = lt_list.
+
+ENDMODULE.
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_INIT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_init .
+  gs_ps011-zcjrq = sy-datum.
+  gs_ps011-zcjsj = sy-uzeit.
+*  gs_ps011-zcjry = sy-uname.
+  SELECT SINGLE name_text
+  FROM adrp
+  LEFT JOIN usr21 ON adrp~persnumber = usr21~persnumber
+  WHERE usr21~bname = @sy-uname
+  INTO @gs_ps011-zcjry.
+
+  "默认扣款日期
+  gs_ps011-zkkrq = sy-datum.
+*  "默认单据类型编码
+*  gs_ps011-zdjlx1 = '70'.
+*  gs_ps011-zdjlxt = '合同扣款单'.
+
+  "默认单据类型编码（服务类扣款）
+  gs_ps011-zdjlx1 = '71'.
+  gs_ps011-zdjlxt = '第三方服务扣款单'.
+
+  "默认扣款类型编码
+  gs_ps011-zztbm = '1'.
+  gs_ps011-zztms = '扣款'.
+
+  "默认审批分类编码
+  gs_ps011-zspfl = '30'.
+  gs_ps011-zflms = '服务类'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Module  F4_ZHTBH  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE f4_zhtbh INPUT.
+  TYPES: BEGIN OF ty_zhtbh,
+           zhtls TYPE ze_zhtls,
+           zhtmc TYPE ze_htmc,
+           zfwht TYPE ze_zfwht,
+           pspid TYPE ps_pspid,
+           post1 TYPE ps_post1,
+         END OF ty_zhtbh.
+  DATA: lt_htbh   TYPE TABLE OF ty_zhtbh,
+        lt_return TYPE TABLE OF ddshretval.
+
+  CLEAR lt_htbh.
+
+  SELECT jbxx~zhtls,jbxx~zhtmc,jbxx~zfwht,jbxx~pspid,p~post1
+    FROM ztmm_jbxx AS jbxx
+    LEFT JOIN proj AS p ON jbxx~pspid = p~pspid
+    INTO TABLE @lt_htbh.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      retfield        = 'ZHTLS'
+      value_org       = 'S'
+      dynpprog        = sy-repid
+      dynpnr          = sy-dynnr
+      dynprofield     = 'gs_ps011-ZHTBH'
+    TABLES
+      value_tab       = lt_htbh
+      return_tab      = lt_return
+    EXCEPTIONS
+      parameter_error = 1
+      no_values_found = 2
+      OTHERS          = 3.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Module  f4_zdjbh  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE f4_zdjbh INPUT.
+
+  TYPES: BEGIN OF ty_zdjbh,
+           zdjbh TYPE zedjbh,
+           zkkyy TYPE zekkyy,
+         END OF ty_zdjbh.
+  DATA: lt_djbh   TYPE TABLE OF ty_zdjbh.
+
+  REFRESH:lt_djbh,lt_return.
+
+  SELECT zdjbh,zkkyy INTO CORRESPONDING FIELDS OF TABLE @lt_djbh
+   FROM ztps0011
+  WHERE zztbm = '2' AND zspzt1 = '30'. "预扣款状态
+
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      retfield        = 'ZDJBH'
+      value_org       = 'S'
+      dynpprog        = sy-repid
+      dynpnr          = sy-dynnr
+      dynprofield     = 'GS_PS011-ZDJBH'
+    TABLES
+      value_tab       = lt_djbh
+      return_tab      = lt_return
+    EXCEPTIONS
+      parameter_error = 1
+      no_values_found = 2
+      OTHERS          = 3.
+
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Module  f4_zkkfylx  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE f4_zkkfylx INPUT.
+
+  CLEAR: lt_list.
+
+  lt_list = VALUE #( BASE lt_list ( key = '1' text = '罚款' )
+                                  ( key = '2' text = '水费' )
+                                  ( key = '3' text = '电费' )
+                                  ( key = '4' text = '制服' )
+                                  ( key = '5' text = '卡证类' )
+                                  ( key = '6' text = '饭堂宿舍' )
+                                  ).
+
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'gs_ps011-ZKKFYLX'
+      values = lt_list.
+
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Module  f4_zfkfsbm INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE f4_zfkfsbm INPUT.
+
+  CLEAR: lt_list.
+
+  lt_list = VALUE #( BASE lt_list
+                                  ( key = '2' text = '转账' )
+                                  ( key = '3' text = '现金' ) ).
+
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'gs_ps011-ZFKFSBM'
+      values = lt_list.
+
+ENDMODULE.
+
+
+*&---------------------------------------------------------------------*
+*&      Module  F4_ZJL  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE f4_zjl INPUT.
+  TYPES: BEGIN OF ty_zjl,
+           pernr TYPE persno,
+           nachn TYPE pad_nachn,
+         END OF ty_zjl.
+  DATA: lt_jl   TYPE TABLE OF ty_zjl.
+
+  CLEAR lt_jl.
+
+  SELECT pernr,nachn
+    FROM pa0002
+    INTO TABLE @lt_jl.
+
+  SORT lt_jl BY pernr.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      retfield        = 'PERNR'
+      value_org       = 'S'
+      dynpprog        = sy-repid
+      dynpnr          = sy-dynnr
+      dynprofield     = 'GS_PS011-ZJL'
+    TABLES
+      value_tab       = lt_jl
+      return_tab      = lt_return
+    EXCEPTIONS
+      parameter_error = 1
+      no_values_found = 2
+      OTHERS          = 3.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Module  f4_zspfl INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE f4_zspfl INPUT.
+  TYPES:BEGIN OF ty_zspfl,
+          zspfl TYPE zespfl,
+          zflms TYPE zeflms,
+        END OF ty_zspfl.
+  DATA: lt_zspfl TYPE TABLE OF ty_zspfl,
+        ls_zspfl TYPE ty_zspfl.
+  CLEAR lt_zspfl.
+
+
+  ls_zspfl-zspfl = '30'.
+  ls_zspfl-zflms = '服务类'.
+  APPEND ls_zspfl TO lt_zspfl.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      retfield        = 'ZSPFL'
+      value_org       = 'S'
+      dynpprog        = sy-repid
+      dynpnr          = sy-dynnr
+      dynprofield     = 'GS_PS011-ZSPFL'
+    TABLES
+      value_tab       = lt_zspfl
+      return_tab      = lt_return
+    EXCEPTIONS
+      parameter_error = 1
+      no_values_found = 2
+      OTHERS          = 3.
+
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*& Form FRM_CHECK
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_check USING iv_mode p_zdjbh i_flg.
+*&---------------------------------------------------------------------*
+* 1.0 检查变更单状态，已经发送OA审批的不能修改
+*&---------------------------------------------------------------------*
+  SELECT SINGLE *
+    FROM ztps0011
+    INTO @DATA(ls_ps0011)
+   WHERE zdjbh = @p_zdjbh.
+  IF sy-subrc <> 0.
+    MESSAGE TEXT-m01 TYPE 'S' DISPLAY LIKE 'E'.
+    LEAVE LIST-PROCESSING.
+    i_flg = abap_true.
+  ELSEIF ls_ps0011-zdjlx1 NE '71'.
+    MESSAGE '单据类型非“71-第三方服务类扣款单”' TYPE 'S' DISPLAY LIKE 'E'.
+    LEAVE LIST-PROCESSING.
+    i_flg = abap_true.
+  ELSEIF ls_ps0011-zspzt1 NE '10' AND iv_mode EQ 'MODIFY'. " 只有创建状态的可以修改
+    MESSAGE TEXT-m02 TYPE 'S' DISPLAY LIKE 'E'.
+    LEAVE LIST-PROCESSING.
+    i_flg = abap_true.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Module  GET_DESC  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE get_addition INPUT.
+  DATA:lv_num TYPE n LENGTH 4.
+  DATA:lv_zhtje TYPE ztmm_jbxx-zhtje.
+
+  "单据号外挂表
+  DATA: lt_dhmax TYPE TABLE OF ztps_dhmax.
+
+  PERFORM get_ht_data.
+
+  IF gs_ps011-zhtbh IS NOT INITIAL.
+*&---------------------------------------------------------------------*
+* 2.0 生成单据编号:"
+*验收单：合同号-YSD-0001
+*&---------------------------------------------------------------------*
+    IF gs_ps011-zdjlx1 IS NOT INITIAL.
+      PERFORM frm_get_domain_value_text USING gs_ps011-zdjlx1
+                                              'ZDDJLX1'
+                                              gs_ps011-zdjlxt.
+
+      PERFORM frm_get_domain_value_text USING gs_ps011-zztbm
+                                        'ZDDZTBM'
+                                        gs_ps011-zztms.
+
+      CASE gs_ps011-zdjlx1.
+        WHEN '10'.
+          DATA(lv_type) = 'SJ'.
+        WHEN '20'.
+          lv_type = 'GJ'.
+        WHEN '30'.
+          lv_type = 'GZ'.
+        WHEN '40'.
+          lv_type = 'ZLD'.
+        WHEN '50'.
+          lv_type = 'HSJ'.
+        WHEN '60'.
+          lv_type = 'QK'.
+        WHEN '70'.
+          lv_type = 'KK'.
+        WHEN '71'.
+          lv_type = 'FW'.
+        WHEN '80'.
+          lv_type = 'YSD'.
+        WHEN OTHERS.
+      ENDCASE.
+
+      "扣款状态如果选择3，则单据编号必填（只能选择或填写审批完成的预扣款单据），保存时只更新扣款状态栏位为：3预扣款转扣款
+      IF gs_ps011-zztbm = '3'.
+
+      ELSE.
+
+        """"当最大单号已存在外挂表时，根据最新单号更新单据号外挂表 start
+        SELECT SINGLE zdjbh
+          FROM ztps_dhmax
+          INTO @DATA(lv_djbh)
+          WHERE zdjlx1 = @gs_ps011-zdjlx1
+           AND zhtbh  = @gs_ps011-zhtbh.
+
+        IF lv_djbh IS NOT INITIAL.
+          SPLIT lv_djbh AT '-' INTO DATA(lv_text1) DATA(lv_text2) lv_num.
+
+          """检查单号与合同流水号是否一致
+          IF  gs_ps011-zhtbh <> lv_text1.
+            MESSAGE '合同流水号与单据号前缀不一致，请联系业务顾问协助检查' TYPE 'E'.
+          ENDIF.
+
+          lv_num = lv_num + 1.
+          gs_ps011-zdjbh = lv_text1 && '-' && lv_text2 && '-' && lv_num.
+
+          UPDATE ztps_dhmax SET zdjbh = gs_ps011-zdjbh
+                                uname = sy-uname
+                                datum = sy-datum
+                                uzeit = sy-uzeit
+                                WHERE zhtbh = gs_ps011-zhtbh
+                                AND zdjlx1 = gs_ps011-zdjlx1.
+
+        ELSE.
+
+          SELECT MAX( zdjbh )
+            FROM ztps0011
+            INTO @DATA(lv_zjdbh)
+           WHERE zdjlx1 = @gs_ps011-zdjlx1
+             AND zhtbh  = @gs_ps011-zhtbh.
+          IF lv_zjdbh IS NOT INITIAL.
+*          SPLIT lv_zjdbh AT '-' INTO DATA(lv_text1) DATA(lv_text2) lv_num.
+*          lv_num = lv_num + 1.
+*          gs_ps011-zdjbh = lv_text1 && '-' && lv_text2 && '-' && lv_num.
+          ELSE.
+            gs_ps011-zdjbh = gs_ps011-zhtbh && '-' && lv_type && '-' && '0001'.
+
+            """"当合同号新起单号时，更新单据号外挂表 start
+            APPEND INITIAL LINE TO lt_dhmax ASSIGNING FIELD-SYMBOL(<fs_dhmax>).
+            <fs_dhmax>-zhtbh  = gs_ps011-zhtbh.
+            <fs_dhmax>-zdjlx1 = gs_ps011-zdjlx1.
+            <fs_dhmax>-zdjbh  = gs_ps011-zdjbh.
+            <fs_dhmax>-uname  = sy-uname.
+            <fs_dhmax>-datum  = sy-datum.
+            <fs_dhmax>-uzeit  = sy-uzeit.
+            IF lt_dhmax IS NOT INITIAL.
+              MODIFY ztps_dhmax FROM TABLE lt_dhmax.
+            ENDIF.
+            """"当合同号新起单号时，更新单据号外挂表 end
+          ENDIF.
+
+        ENDIF.
+        """"当最大单号已存在外挂表时，根据最新单号更新单据号外挂表 end
+
+      ENDIF.
+
+*-----  获取第三方服务扣款行项目信息
+      PERFORM frm_get_i_data.
+
+    ENDIF.
+
+  ENDIF.
+
+*&---------------------------------------------------------------------*
+* 3.0 根据经理编号带出人员名称
+*&---------------------------------------------------------------------*
+  SELECT SINGLE nachn
+      FROM pa0002
+    WHERE pernr = @gs_ps011-zjl
+      INTO @DATA(ls_jlmc).
+
+  IF ls_jlmc IS NOT INITIAL.
+    gv_jlmc = ls_jlmc.
+  ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form FRM_GET_DOMAIN_VALUE_TEXT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> IV_VALUE
+*&      --> IV_DOMNAME
+*&      --> CV_TEXT
+*&---------------------------------------------------------------------*
+FORM frm_get_domain_value_text  USING    iv_value
+                                         iv_domname
+                                         cv_text.
+
+  DATA: ls_dd07v TYPE dd07v.
+
+  CLEAR: cv_text.
+
+  ls_dd07v-domname    = iv_domname.
+  ls_dd07v-domvalue_l = iv_value.
+
+  CALL FUNCTION 'HR_AU_DOMAIN_VALUE_TEXT_READ'
+    EXPORTING
+      name      = ls_dd07v-domname
+      spras     = sy-langu
+      value     = ls_dd07v-domvalue_l
+    IMPORTING
+      text      = ls_dd07v-ddtext
+    EXCEPTIONS
+      not_found = 1
+      OTHERS    = 2.
+  IF sy-subrc <> 0.
+  ENDIF.
+
+  cv_text = ls_dd07v-ddtext.
+ENDFORM.
+
+FORM get_ht_data.
+*&---------------------------------------------------------------------*
+* 1.0 根据合同编号带出附加信息
+*&---------------------------------------------------------------------*
+  IF gs_ps011-zhtbh IS NOT INITIAL.
+    SELECT SINGLE *
+      FROM ztmm_jbxx
+      INTO @DATA(ls_header)
+     WHERE zhtls = @gs_ps011-zhtbh.
+    IF sy-subrc <> 0.
+      MESSAGE '合同非有效，请检查输入' TYPE 'E'.
+    ELSE.
+      SELECT SINGLE zhtls,zhtdl INTO @DATA(ls_check_zhtls) FROM ztmm_jbxx WHERE zhtls = @gs_ps011-zhtbh AND statu IN ('4','5','6','7') AND spsta = '3'.
+      IF sy-subrc <> 0.
+        MESSAGE '合同未生效' TYPE 'E'.
+      ELSE.
+        IF ls_check_zhtls-zhtdl <> '301'.
+          MESSAGE '‘' && gs_ps011-zhtbh && '’' &&'   非服务合同，不可创建单据' TYPE 'E'.
+        ELSE.
+          SELECT * INTO TABLE @DATA(lt_fwxx) FROM ztmm_fwxx WHERE zhtls = @gs_ps011-zhtbh AND ebeln <> '' .
+          IF lt_fwxx IS NOT INITIAL.
+          ELSE.
+            MESSAGE '‘' && gs_ps011-zhtbh && '’' &&'   未生成采购订单，不可创建单据' TYPE 'E'.
+          ENDIF.
+
+        ENDIF.
+      ENDIF.
+    ENDIF.
+
+    SELECT * INTO TABLE @DATA(lt_ht)
+      FROM ztmm_jbxx WHERE zhtls = @gs_ps011-zhtbh.
+
+*&---------------------------------------------------------------------*
+* 1.1 合同描述
+*&---------------------------------------------------------------------*
+    gs_ps011-zhtmc = ls_header-zhtmc.
+
+    "法务合同号
+    gs_ps011-zfwht = ls_header-zfwht.
+*&---------------------------------------------------------------------*
+* 1.2 合同对应施工单位:LIFNR
+*&---------------------------------------------------------------------*
+    SELECT SINGLE lifnr
+      FROM ztmm_xdfxx
+      INTO gs_ps011-zsgdw
+     WHERE zhtls = gs_ps011-zhtbh.
+*&---------------------------------------------------------------------*
+* 1.3 供应商名称
+*&---------------------------------------------------------------------*
+    SELECT SINGLE name1
+      FROM lfa1
+      INTO gs_ps011-zgfmc
+     WHERE lifnr = gs_ps011-zsgdw.
+**&---------------------------------------------------------------------*
+** 1.4 项目号
+**&---------------------------------------------------------------------*
+*    gs_ps011-zxmh = ls_header-pspid.
+**&---------------------------------------------------------------------*
+** 1.5 项目名称
+**&---------------------------------------------------------------------*
+*    SELECT SINGLE post1
+*      FROM proj
+*      INTO gs_ps011-zxmm
+*     WHERE pspid = ls_header-pspid.
+
+
+
+******&---------------------------------------------------------------------*
+****** 1.6 收款公司&名称
+******&---------------------------------------------------------------------*
+***    gs_ps011-zskgs = ls_header-bukrs.
+***    gs_ps011-zskgsmc = ls_header-name1.
+  ENDIF.
+ENDFORM.
+**&---------------------------------------------------------------------*
+**&      Module  F4_BGYY  INPUT
+**&---------------------------------------------------------------------*
+**       text
+**----------------------------------------------------------------------*
+*MODULE f4_bgyy INPUT.
+*  TYPES: BEGIN OF ty_zbgyy,
+*           zbgyy1 TYPE zebgyy1,
+*           zbgyyt TYPE zebgyyt,
+*         END OF ty_zbgyy.
+*  DATA: lt_zbgyy  TYPE TABLE OF ty_zbgyy,
+*        lt_fields TYPE TABLE OF dynpread,
+*        lv_text   TYPE string.
+*
+*  CLEAR: lt_zbgyy,lt_fields.
+*  APPEND INITIAL LINE TO lt_fields ASSIGNING FIELD-SYMBOL(<fs_fields>).
+*  <fs_fields>-fieldname = 'gs_ps011-ZDJLX1'.
+*  CALL FUNCTION 'DYNP_VALUES_READ'
+*    EXPORTING
+*      dyname               = sy-repid
+*      dynumb               = sy-dynnr
+*    TABLES
+*      dynpfields           = lt_fields
+*    EXCEPTIONS
+*      invalid_abapworkarea = 1
+*      invalid_dynprofield  = 2
+*      invalid_dynproname   = 3
+*      invalid_dynpronummer = 4
+*      invalid_request      = 5
+*      no_fielddescription  = 6
+*      invalid_parameter    = 7
+*      undefind_error       = 8
+*      double_conversion    = 9
+*      stepl_not_found      = 10
+*      OTHERS               = 11.
+*  IF sy-subrc <> 0.
+*  ENDIF.
+*
+*  READ TABLE lt_fields INTO DATA(ls_fields) INDEX 1.
+*  CASE ls_fields-fieldvalue.
+*    WHEN '10'.
+*      PERFORM frm_get_domain_value_text USING '10'
+*                                              'ZDBGYY1'
+*                                              lv_text.
+*      lt_zbgyy = VALUE #( BASE lt_zbgyy ( zbgyy1 = '10' zbgyyt = lv_text ) ).
+*
+*      PERFORM frm_get_domain_value_text USING '11'
+*                                              'ZDBGYY1'
+*                                              lv_text.
+*      lt_zbgyy = VALUE #( BASE lt_zbgyy ( zbgyy1 = '11' zbgyyt = lv_text ) ).
+*
+*      PERFORM frm_get_domain_value_text USING '12'
+*                                              'ZDBGYY1'
+*                                              lv_text.
+*      lt_zbgyy = VALUE #( BASE lt_zbgyy ( zbgyy1 = '12' zbgyyt = lv_text ) ).
+*
+*      PERFORM frm_get_domain_value_text USING '13'
+*                                              'ZDBGYY1'
+*                                              lv_text.
+*      lt_zbgyy = VALUE #( BASE lt_zbgyy ( zbgyy1 = '13' zbgyyt = lv_text ) ).
+*
+*      PERFORM frm_get_domain_value_text USING '14'
+*                                              'ZDBGYY1'
+*                                              lv_text.
+*      lt_zbgyy = VALUE #( BASE lt_zbgyy ( zbgyy1 = '14' zbgyyt = lv_text ) ).
+*
+*      PERFORM frm_get_domain_value_text USING '15'
+*                                              'ZDBGYY1'
+*                                              lv_text.
+*      lt_zbgyy = VALUE #( BASE lt_zbgyy ( zbgyy1 = '15' zbgyyt = lv_text ) ).
+*    WHEN '20' OR '30'.
+*      PERFORM frm_get_domain_value_text USING '20'
+*                                              'ZDBGYY1'
+*                                              lv_text.
+*      lt_zbgyy = VALUE #( BASE lt_zbgyy ( zbgyy1 = '20' zbgyyt = lv_text ) ).
+*
+*      PERFORM frm_get_domain_value_text USING '21'
+*                                              'ZDBGYY1'
+*                                              lv_text.
+*      lt_zbgyy = VALUE #( BASE lt_zbgyy ( zbgyy1 = '21' zbgyyt = lv_text ) ).
+*
+*      PERFORM frm_get_domain_value_text USING '22'
+*                                              'ZDBGYY1'
+*                                              lv_text.
+*      lt_zbgyy = VALUE #( BASE lt_zbgyy ( zbgyy1 = '22' zbgyyt = lv_text ) ).
+*
+*      PERFORM frm_get_domain_value_text USING '23'
+*                                              'ZDBGYY1'
+*                                              lv_text.
+*      lt_zbgyy = VALUE #( BASE lt_zbgyy ( zbgyy1 = '23' zbgyyt = lv_text ) ).
+*    WHEN OTHERS.
+*  ENDCASE.
+*
+*  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+*    EXPORTING
+*      retfield        = 'ZBGYY1'
+*      value_org       = 'S'
+*      dynpprog        = sy-repid
+*      dynpnr          = sy-dynnr
+*      dynprofield     = 'gs_ps011-ZBGYY1'
+*    TABLES
+*      value_tab       = lt_zbgyy
+*      return_tab      = lt_return
+*    EXCEPTIONS
+*      parameter_error = 1
+*      no_values_found = 2
+*      OTHERS          = 3.
+*ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form FRM_POP_UP_2_CONFIRM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_pop_up_2_confirm .
+
+  DATA: lv_answer TYPE c,
+        lv_text   TYPE string.
+  lv_text = TEXT-t05.
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+      titlebar       = '确认'
+      text_question  = lv_text
+    IMPORTING
+      answer         = lv_answer
+    EXCEPTIONS
+      text_not_found = 1
+      OTHERS         = 2.
+  IF sy-subrc <> 0.
+
+  ENDIF.
+
+  IF lv_answer EQ '1'.
+    PERFORM frm_save_data.
+    PERFORM frm_retrieve_data.
+    PERFORM frm_send_data_2_oa.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FRM_GET_LOG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_get_log USING iv_mode p_zdjbh.
+
+  DATA: lt_style  TYPE lvc_t_styl, ""控制单元格是否可编辑
+        lwa_style TYPE lvc_s_styl.
+
+  DATA: lv_index TYPE i.
+*----- 获取表单数据
+  SELECT SINGLE *
+    FROM ztps0011
+    INTO CORRESPONDING FIELDS OF gs_ps011
+   WHERE zdjbh = p_zdjbh.
+
+  PERFORM frm_get_domain_value_text USING gs_ps011-zspzt1
+                                  'ZDSPZT'
+                                  gs_ps011-zspzt2.
+
+**----- 限制单据只能发起人修改
+*  IF gv_mode = gc_mode_change.
+*    IF sy-uname <> gs_ps011-zcjry.
+*      MESSAGE '只有当前单据发起人——' && '“' && gs_ps011-zcjry && '”' && '  才可以修改' TYPE 'S' DISPLAY LIKE 'E'.
+*      LEAVE LIST-PROCESSING.
+*    ENDIF.
+*  ENDIF.
+
+*----- 获取附件数据
+  IF gs_ps011-zdjlx1 IS NOT INITIAL AND gs_ps011-zdjbh IS NOT INITIAL.
+    SELECT * INTO CORRESPONDING FIELDS OF TABLE gt_ztfile FROM ztfile
+      WHERE zkey1 = gs_ps011-zdjlx1 AND zkey2 = gs_ps011-zdjbh AND zdelfg <> 'X'.
+  ENDIF.
+
+
+*----- 获取第三方服务扣款行项目数据
+  SELECT * FROM ztps0011_fw INTO CORRESPONDING FIELDS OF TABLE @gt_fwitem WHERE zdjbh = @gs_ps011-zdjbh AND zhtbh = @gs_ps011-zhtbh AND zdel NE @abap_true.
+
+  CLEAR lv_index.
+  CASE iv_mode.
+    WHEN 'MODIFY'.
+
+      """"发送至泛微审批,但因驳回而改回创建状态，第三方服务扣款行项目需更改至可编辑
+      IF gs_ps011-zspzt1 = '10' AND gs_ps011-zoaid IS NOT INITIAL.
+        LOOP AT gt_fwitem ASSIGNING FIELD-SYMBOL(<fs_alvdata>).
+
+          lv_index = lv_index + 1.
+          <fs_alvdata>-index  = lv_index.
+          <fs_alvdata>-chk    = abap_true.
+
+          """"控制单元格编辑状态 start
+          lwa_style-fieldname = 'CHK'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+          INSERT lwa_style INTO TABLE lt_style.
+          CLEAR lwa_style.
+
+          lwa_style-fieldname = 'ZSKGS'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+          INSERT lwa_style INTO TABLE lt_style.
+          CLEAR lwa_style.
+
+          lwa_style-fieldname = 'ZSKGSMC'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+          INSERT lwa_style INTO TABLE lt_style.
+          CLEAR lwa_style.
+
+          lwa_style-fieldname = 'KOSTL'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+          INSERT lwa_style INTO TABLE lt_style.
+          CLEAR lwa_style.
+
+          lwa_style-fieldname = 'KTEXT'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+          INSERT lwa_style INTO TABLE lt_style.
+          CLEAR lwa_style.
+
+          lwa_style-fieldname = 'POSID'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+          INSERT lwa_style INTO TABLE lt_style.
+          CLEAR lwa_style.
+
+          lwa_style-fieldname = 'POST1'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+          INSERT lwa_style INTO TABLE lt_style.
+          CLEAR lwa_style.
+
+          lwa_style-fieldname = 'ZKKJE'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+          INSERT lwa_style INTO TABLE lt_style.
+          CLEAR lwa_style.
+
+          lwa_style-fieldname = 'ZGLFJE'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+          INSERT lwa_style INTO TABLE lt_style.
+          CLEAR lwa_style.
+
+          lwa_style-fieldname = 'ZYSL'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+          INSERT lwa_style INTO TABLE lt_style.
+          CLEAR lwa_style.
+
+          lwa_style-fieldname = 'ZYDL'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+          INSERT lwa_style INTO TABLE lt_style.
+          CLEAR lwa_style.
+
+          <fs_alvdata>-celltab = lt_style.
+          CLEAR lt_style.
+
+          """"控制单元格编辑状态 end
+        ENDLOOP.
+      ENDIF.
+
+    WHEN 'DIS'.
+
+      LOOP AT gt_fwitem ASSIGNING <fs_alvdata>.
+
+        lv_index = lv_index + 1.
+        <fs_alvdata>-index  = lv_index.
+        <fs_alvdata>-chk    = abap_true.
+
+
+        """"控制单元格编辑状态 start
+        lwa_style-fieldname = 'CHK'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE lt_style.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZSKGS'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE lt_style.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZSKGSMC'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE lt_style.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'KOSTL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE lt_style.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'KTEXT'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE lt_style.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'POSID'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE lt_style.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'POST1'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE lt_style.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZKKJE'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE lt_style.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZGLFJE'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE lt_style.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYSL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE lt_style.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYDL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE lt_style.
+        CLEAR lwa_style.
+
+        <fs_alvdata>-celltab = lt_style.
+        CLEAR lt_style.
+
+        """"控制单元格编辑状态 end
+      ENDLOOP.
+
+
+    WHEN OTHERS.
+  ENDCASE.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FRM_MODIFY_SCREEN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_modify_screen .
+  CASE gv_mode.
+    WHEN gc_mode_display.
+      LOOP AT SCREEN INTO DATA(ls_screen).
+        ls_screen-input = 0.
+        MODIFY SCREEN FROM ls_screen.
+      ENDLOOP.
+    WHEN gc_mode_change.
+      LOOP AT SCREEN INTO ls_screen.
+        IF ls_screen-group1 EQ 'GP1'.
+          ls_screen-input = 0.
+          MODIFY SCREEN FROM ls_screen.
+        ENDIF.
+      ENDLOOP.
+    WHEN gc_mode_create.
+      LOOP AT SCREEN INTO ls_screen.
+        IF ls_screen-group1 EQ 'GP2'.
+          ls_screen-input = 1.
+          MODIFY SCREEN FROM ls_screen.
+        ENDIF.
+      ENDLOOP.
+    WHEN OTHERS.
+  ENDCASE.
+
+  IF gs_ps011-zztbm = '3'.
+    LOOP AT SCREEN INTO ls_screen.
+      IF ls_screen-name EQ 'GS_PS011-ZDJBH'.
+        ls_screen-input = 1.
+        MODIFY SCREEN FROM ls_screen.
+      ENDIF.
+    ENDLOOP.
+
+    LOOP AT SCREEN INTO ls_screen.
+      IF ls_screen-name EQ 'GS_PS011-ZHTBH'.
+        ls_screen-input = 0.
+        MODIFY SCREEN FROM ls_screen.
+      ENDIF.
+    ENDLOOP.
+
+    LOOP AT SCREEN INTO ls_screen.
+      IF ls_screen-name EQ 'GS_PS011-ZKKYY'.
+        ls_screen-input = 0.
+        MODIFY SCREEN FROM ls_screen.
+      ENDIF.
+    ENDLOOP.
+
+    LOOP AT SCREEN INTO ls_screen.
+      IF ls_screen-name EQ 'GS_PS011-ZHTJE'.
+        ls_screen-input = 0.
+        MODIFY SCREEN FROM ls_screen.
+      ENDIF.
+    ENDLOOP.
+
+    LOOP AT SCREEN INTO ls_screen.
+      IF ls_screen-name EQ 'GS_PS011-ZKKRQ'.
+        ls_screen-input = 0.
+        MODIFY SCREEN FROM ls_screen.
+      ENDIF.
+    ENDLOOP.
+
+  ELSE.
+
+    LOOP AT SCREEN INTO ls_screen.
+      IF ls_screen-name EQ 'GS_PS011-ZDJBH'.
+        ls_screen-input = 0.
+        MODIFY SCREEN FROM ls_screen.
+      ENDIF.
+    ENDLOOP.
+  ENDIF.
+
+  IF gs_ps011-zkkfylx = '1'.
+    LOOP AT SCREEN INTO ls_screen.
+      IF ls_screen-name EQ 'GS_PS011-ZYDL' OR ls_screen-name EQ 'GS_PS011-ZYSL'.
+        ls_screen-input = 0.
+        MODIFY SCREEN FROM ls_screen.
+      ENDIF.
+    ENDLOOP.
+  ELSEIF gs_ps011-zkkfylx = '2'.
+    LOOP AT SCREEN INTO ls_screen.
+      IF  ls_screen-name EQ 'GS_PS011-ZYDL'.
+        ls_screen-input = 0.
+        MODIFY SCREEN FROM ls_screen.
+      ENDIF.
+    ENDLOOP.
+  ELSEIF gs_ps011-zkkfylx = '3'.
+    LOOP AT SCREEN INTO ls_screen.
+      IF  ls_screen-name EQ 'GS_PS011-ZYSL'.
+        ls_screen-input = 0.
+        MODIFY SCREEN FROM ls_screen.
+      ENDIF.
+    ENDLOOP.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Module  GET_DESC  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE get_desc INPUT.
+*  PERFORM frm_get_domain_value_text USING gs_ps011-zbgyy1
+*                                          'ZDBGYY1'
+*                                          gs_ps011-zbgyyt.
+  IF gs_ps011-zztbm = '3'.
+    IF gs_ps011-zdjbh IS NOT INITIAL.
+      SELECT SINGLE * INTO @DATA(ls_ztps0011) FROM ztps0011
+        WHERE zdjbh =  @gs_ps011-zdjbh
+        AND zdjlx1 = @gs_ps011-zdjlx1.
+      IF sy-subrc = 0.
+
+        IF ls_ztps0011-zztbm <> '2' AND ls_ztps0011-zspzt1 <> '10'.  "不是预扣款则报错
+          MESSAGE '请选择预扣款类型的单据编号' TYPE 'E'.
+        ENDIF.
+
+        gs_ps011-zhtbh = ls_ztps0011-zhtbh.
+        gs_ps011-zhtmc = ls_ztps0011-zhtmc.
+        gs_ps011-zkkyy = ls_ztps0011-zkkyy.
+        gs_ps011-zgfmc = ls_ztps0011-zgfmc.
+        gs_ps011-zsgdw = ls_ztps0011-zsgdw.
+        gs_ps011-zxmh = ls_ztps0011-zxmh.
+        gs_ps011-zxmm = ls_ztps0011-zxmm.
+        gs_ps011-zhtje = ls_ztps0011-zhtje.
+        gs_ps011-zkkrq = ls_ztps0011-zkkrq.
+        gs_ps011-zkkfylx = ls_ztps0011-zkkfylx.
+      ELSE.
+
+        MESSAGE '找不到单据编号' TYPE 'E'.
+
+      ENDIF.
+    ENDIF.
+
+  ENDIF.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Module  get_fkfs  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE get_fkfs INPUT.
+  IF gs_ps011-zfkfsbm IS NOT INITIAL.
+    PERFORM frm_get_domain_value_text USING gs_ps011-zfkfsbm
+                                        'ZDDFKFS'
+                                        gs_ps011-zfkfs.
+  ENDIF.
+ENDMODULE.
+
+
+*&---------------------------------------------------------------------*
+*&      Module  get_kkfyms  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE get_kkfyms INPUT.
+
+  DATA: lt_style  TYPE lvc_t_styl, ""控制单元格是否可编辑
+        lwa_style TYPE lvc_s_styl.
+
+  IF gs_ps011-zkkfylx IS NOT INITIAL.
+    PERFORM frm_get_domain_value_text USING gs_ps011-zkkfylx
+                                        'ZDDFYLX'
+                                        gs_ps011-zkkfyms.
+  ENDIF.
+
+
+
+  CHECK gt_fwitem IS NOT INITIAL.
+
+  LOOP AT gt_fwitem ASSIGNING FIELD-SYMBOL(<fs_fwitem>).
+
+    CLEAR <fs_fwitem>-celltab.
+
+    CASE gs_ps011-zkkfylx.
+      WHEN '1'.  "罚款
+
+        IF <fs_fwitem>-zydl IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zydl.
+        ENDIF.
+        IF <fs_fwitem>-zysl IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zysl.
+        ENDIF.
+        IF <fs_fwitem>-zglfje IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zglfje.
+        ENDIF.
+
+        lwa_style-fieldname = 'KOSTL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'POSID'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZGLFJE'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYSL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYDL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+
+      WHEN '2'. "水费
+
+        IF <fs_fwitem>-zydl IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zydl.
+        ENDIF.
+        IF <fs_fwitem>-zglfje IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zglfje.
+        ENDIF.
+
+        lwa_style-fieldname = 'KOSTL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'POSID'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZGLFJE'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+
+        lwa_style-fieldname = 'ZYDL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYSL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+
+      WHEN '3'. "电费
+
+        IF <fs_fwitem>-zysl IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zysl.
+        ENDIF.
+
+        lwa_style-fieldname = 'KOSTL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'POSID'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYSL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZGLFJE'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+
+        lwa_style-fieldname = 'ZYDL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+
+      WHEN '4'. "制服
+
+        IF <fs_fwitem>-zydl IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zydl.
+        ENDIF.
+        IF <fs_fwitem>-zysl IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zysl.
+        ENDIF.
+        IF <fs_fwitem>-zglfje IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zglfje.
+        ENDIF.
+
+        lwa_style-fieldname = 'ZGLFJE'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYSL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYDL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+      WHEN '5'. "卡证类
+
+        IF <fs_fwitem>-zydl IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zydl.
+        ENDIF.
+        IF <fs_fwitem>-zysl IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zysl.
+        ENDIF.
+        IF <fs_fwitem>-zglfje IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zglfje.
+        ENDIF.
+
+        lwa_style-fieldname = 'ZGLFJE'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYSL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYDL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+      WHEN '6'. "饭堂宿舍
+
+        IF <fs_fwitem>-zydl IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zydl.
+        ENDIF.
+        IF <fs_fwitem>-zysl IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zysl.
+        ENDIF.
+        IF <fs_fwitem>-zglfje IS NOT INITIAL.
+          CLEAR <fs_fwitem>-zglfje.
+        ENDIF.
+
+        lwa_style-fieldname = 'ZGLFJE'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYSL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+        lwa_style-fieldname = 'ZYDL'.
+        lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+        INSERT lwa_style INTO TABLE <fs_fwitem>-celltab.
+        CLEAR lwa_style.
+
+      WHEN OTHERS.
+    ENDCASE.
+
+  ENDLOOP.
+
+
+ENDMODULE.
+
+
+*&---------------------------------------------------------------------*
+*&      Module  get_glfje  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE get_glfje INPUT.
+
+  IF gs_ps011-zydl IS NOT INITIAL.
+    gs_ps011-zglfje = gs_ps011-zydl * '0.4'.
+  ENDIF.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Module  get_glfje  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE get_zdjlx1t INPUT.
+
+  IF gs_ps011-zdjlx1 = '70'.
+    gs_ps011-zdjlxt = '合同扣款单'.
+  ELSEIF gs_ps011-zdjlx1 = '71'.
+    gs_ps011-zdjlxt = '第三方服务扣款单'.
+  ENDIF.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Module  get_flms  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+* 1.0 审批分类
+*&---------------------------------------------------------------------*
+MODULE get_flms INPUT.
+  IF gs_ps011-zspfl IS NOT INITIAL.
+
+    PERFORM frm_get_domain_value_text USING gs_ps011-zspfl
+                                              'ZDSPFL'
+                                              gs_ps011-zflms.
+  ENDIF.
+ENDMODULE.
+**&---------------------------------------------------------------------*
+**&      Module  GET_CHANGE  INPUT
+**&---------------------------------------------------------------------*
+**       text
+**----------------------------------------------------------------------*
+*MODULE GET_CHANGE OUTPUT.
+**  PERFORM frm_get_domain_value_text USING gs_ps011-zbgyy1
+**                                          'ZDBGYY1'
+**                                          gs_ps011-zbgyyt.
+*
+*        LOOP AT SCREEN INTO DATA(ls_screen).
+*          IF ls_screen-name EQ 'GS_PS011-ZDJBM'.
+*            ls_screen-input = 1.
+*            MODIFY SCREEN FROM ls_screen.
+*          ENDIF.
+*        ENDLOOP.
+*
+*
+*ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*& Form FRM_AUTH_CHK
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_auth_chk USING iv_mode.
+  DATA:
+    lv_actvt TYPE zepsactvt,
+    lv_tcode TYPE char30,
+    ls_msg   TYPE zcms0001.
+*       lv_type1 TYPE zepstype1,
+*       lv_bukrs TYPE bukrs,
+*       lv_kostl TYPE kostl,
+*       lv_type2 TYPE zedjlx1.
+  CLEAR:
+  lv_actvt,
+  lv_tcode."lv_type1,lv_bukrs,lv_kostl,lv_type2.
+
+  IF iv_mode EQ 'CREATE'.
+    lv_actvt = '1'.
+  ELSEIF iv_mode EQ 'MODIFY'.
+    lv_actvt = '2'.
+  ELSEIF iv_mode EQ 'DIS'.
+    lv_actvt = '3'.
+  ENDIF.
+
+  lv_tcode = 'ZPSI011'.
+
+  CALL FUNCTION 'Z_PS_AUTH_CTRL'
+    EXPORTING
+      iv_actvt = lv_actvt
+*     iv_type1 =
+*     iv_bukrs =
+*     iv_kostl =
+*     iv_type2 =
+      iv_tcode = lv_tcode
+    IMPORTING
+      gs_msg   = ls_msg.
+
+  IF ls_msg-msgty = 'E' OR ls_msg-msgty = 'W'.
+    MESSAGE ls_msg-message TYPE 'S' DISPLAY LIKE 'E'.
+    LEAVE LIST-PROCESSING.
+  ENDIF.
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*&      Module  AUTH_CHECK  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE auth_check INPUT.
+*&---------------------------------------------------------------------*
+** 1.0 校验用户是否有项目选择权限
+*&---------------------------------------------------------------------*
+  DATA:ls_type1 TYPE c,
+       ls_type2 TYPE zedjlx1,
+       ls_bukrs TYPE bukrs,
+       ls_kostl TYPE kostl.
+
+*  ls_type1 = gs_ps011-zxmh+0(1).
+*  ls_type2 = gs_ps011-zdjlx1.
+*  IF gs_ps011-zxmh IS NOT INITIAL.
+*    SELECT SINGLE bukrs FROM ztmm_jbxx INTO @ls_bukrs WHERE zhtls = @gs_ps011-zhtbh AND pspid = @gs_ps011-zxmh.
+*  ENDIF.
+*
+*  CLEAR:gv_authcheck.
+*  PERFORM frm_auth_check USING ls_type1
+*                               ls_bukrs
+*                               ls_kostl
+*                               ls_type2.
+
+
+ENDMODULE.
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_AUTH_CHECK
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_auth_check USING lv_type1
+                          lv_bukrs
+                          lv_kostl
+                          lv_type2.
+
+  CLEAR:gs_msg.
+  CALL FUNCTION 'Z_PS_AUTH_CTRL'
+    EXPORTING
+*     IV_ACTVT =
+      iv_type1 = lv_type1
+      iv_bukrs = lv_bukrs
+      iv_kostl = lv_kostl
+      iv_type2 = lv_type2
+*     IV_TCODE =
+    IMPORTING
+      gs_msg   = gs_msg.
+
+  IF gs_msg-msgty = 'E' OR gs_msg-msgty = 'W'.
+    MESSAGE gs_msg-message TYPE 'S' DISPLAY LIKE 'E'.
+    gv_authcheck = abap_true.
+  ENDIF.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form frm_get_fj_data
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_get_fj_data.
+  DATA:lv_index TYPE i.
+  CLEAR:lv_index.
+
+  IF gs_ps011-zdjlx1 IS NOT INITIAL AND gs_ps011-zdjbh IS NOT INITIAL.
+    SELECT * INTO CORRESPONDING FIELDS OF TABLE gt_fj_alv FROM ztfile
+      WHERE zkey1 = gs_ps011-zdjlx1 AND zkey2 = gs_ps011-zdjbh AND zdelfg <> 'X'.
+    IF sy-subrc = 0.
+      LOOP AT gt_fj_alv ASSIGNING FIELD-SYMBOL(<fs_alv>).
+        lv_index = lv_index + 1.
+        <fs_alv>-index = lv_index.
+      ENDLOOP.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FRM_ALV_GRID_9000
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_alv_grid_9000 .
+
+  IF g_con_fj IS INITIAL.
+
+    PERFORM frm_get_fj_data.
+
+    PERFORM frm_ini_alv USING g_container_fj g_con_fj g_grid_fj.
+    PERFORM frm_inject_act USING g_grid_fj g_event_receiver_fj 'CONTAINER_FJ'.
+    PERFORM frm_exclude_toolbar.
+
+    g_layout_fj-sel_mode    = 'D'.
+    g_layout_fj-no_toolbar  = 'X'.
+
+    PERFORM frm_fill_fieldcat_fj.
+
+    CALL METHOD g_grid_fj->set_table_for_first_display
+      EXPORTING
+        is_layout            = g_layout_fj
+        it_toolbar_excluding = gt_exclude
+      CHANGING
+        it_outtab            = gt_fj_alv[]
+        it_fieldcatalog      = gt_fieldcat_fj[].
+
+  ELSE.
+    PERFORM frm_refresh_alv USING g_grid_fj.
+  ENDIF.
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*&      Form  FRM_INI_ALV
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_G_CONTAINER1  text
+*      -->P_G_CON1  text
+*      -->P_G_GRID1  text
+*----------------------------------------------------------------------*
+FORM frm_ini_alv  USING    p_container
+                           p_con TYPE REF TO cl_gui_custom_container
+                           p_grid TYPE REF TO cl_gui_alv_grid.
+
+  PERFORM frm_create_container_object USING p_con
+                                      p_container.
+
+  PERFORM frm_create_alv_object    USING p_grid
+                                     p_con.
+ENDFORM.                    " FRM_INI_ALV
+
+*&---------------------------------------------------------------------*
+*&      Form  CREATE_CONTAINER_OBJECT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_P_CON  text
+*      -->P_P_CONTAINER  text
+*----------------------------------------------------------------------*
+FORM frm_create_container_object  USING p_con TYPE REF TO cl_gui_custom_container
+                                    p_container.
+
+  CREATE OBJECT p_con
+    EXPORTING
+      container_name              = p_container
+    EXCEPTIONS
+      cntl_error                  = 1
+      cntl_system_error           = 2
+      create_error                = 3
+      lifetime_error              = 4
+      lifetime_dynpro_dynpro_link = 5.
+
+ENDFORM.                    " CREATE_CONTAINER_OBJECT
+*&---------------------------------------------------------------------*
+*&      Form  CREATE_ALV_OBJECT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_P_GRID  text
+*      -->P_P_CON  text
+*----------------------------------------------------------------------*
+FORM frm_create_alv_object  USING    p_grid TYPE REF TO cl_gui_alv_grid
+                                 p_con TYPE REF TO cl_gui_custom_container.
+
+
+  CREATE OBJECT p_grid
+    EXPORTING
+      i_parent = p_con.
+
+ENDFORM.                    " CREATE_ALV_OBJECT
+
+
+*&---------------------------------------------------------------------*
+*&      Form  FRM_INJECT_ACT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_G_GRID1  text
+*      -->P_G_EVENT_RECEIVER1  text
+*      -->P_0132   text
+*----------------------------------------------------------------------*
+FORM frm_inject_act  USING    p_grid    TYPE REF TO cl_gui_alv_grid
+                              p_receiver TYPE REF TO lc_event_receiver
+                              VALUE(p_alv).
+  CREATE OBJECT p_receiver.
+  SET HANDLER p_receiver->handle_hotspot_click FOR p_grid.
+  SET HANDLER p_receiver->handle_data_changed FOR p_grid.
+  SET HANDLER p_receiver->handle_changed_finished FOR p_grid.
+  SET HANDLER p_receiver->handle_toolbar FOR p_grid.
+  SET HANDLER p_receiver->catch_doubleclick FOR p_grid.
+  SET HANDLER p_receiver->handle_user_command FOR p_grid.
+*  SET HANDLER p_receiver->on_f4_help         FOR p_grid.
+  SET HANDLER p_receiver->handle_button_click         FOR p_grid.
+  CALL METHOD p_receiver->handle_set_alv
+    EXPORTING
+      zalv = p_alv.
+
+  CALL METHOD p_grid->register_edit_event
+    EXPORTING
+      i_event_id = cl_gui_alv_grid=>mc_evt_modified.
+
+ENDFORM.                    " FRM_INJECT_ACT
+
+*&---------------------------------------------------------------------*
+*& Form FRM_EXCLUDE_TOOLBAR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+
+FORM frm_exclude_toolbar .
+  DATA:
+    lwa_exclude LIKE LINE OF gt_exclude.
+*  lwa_exclude = ''.
+*  APPEND lwa_exclude TO gt_exclude.
+  CLEAR gt_exclude[].
+
+  lwa_exclude = cl_gui_alv_grid=>mc_fc_loc_insert_row.
+  APPEND lwa_exclude TO gt_exclude   .
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form FRM_FILL_FIELDCAT_TPXXFJ
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_fill_fieldcat_fj .
+  DATA:
+    lt_fieldcat TYPE lvc_t_fcat,
+    ls_fieldcat LIKE lvc_s_fcat.
+
+  DEFINE add_fieldcat.
+    CLEAR ls_fieldcat.
+    ls_fieldcat-ref_table     =  &1.
+    ls_fieldcat-ref_field     =  &2.
+    ls_fieldcat-fieldname     =  &3.
+    ls_fieldcat-reptext       =  &4.
+    ls_fieldcat-outputlen     =  &5.
+    ls_fieldcat-hotspot       =  &6.
+    ls_fieldcat-f4availabl    =  &7.
+    ls_fieldcat-checktable    =  &8.
+    APPEND ls_fieldcat TO lt_fieldcat.
+  END-OF-DEFINITION.
+
+
+  add_fieldcat  ''               ''       'INDEX'        '序号'                    '6'   ''  ''   ''.
+  add_fieldcat  ''               ''       'ZFILENNAME'       '文件名称'                '20'   ''  ''   ''.
+  add_fieldcat  ''               ''       'ZOADOCID'    '泛微文件ID'              '10'   'X'  ''   ''.
+  add_fieldcat  'ZTFILE'         'CRNAME'   'CRNAME'       '上传人员'              '12'   ''  ''   ''.
+  add_fieldcat  'ZTFILE'         'CRDAT'    'CRDAT'        '上传日期'              '10'   ''  ''   ''.
+  add_fieldcat  'ZTFILE'         'CRTIM'    'CRTIM'        '上传时间'              '10'   ''  ''   ''.
+  gt_fieldcat_fj = lt_fieldcat.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  FRM_REFRESH_ALV
+*&----------------------------------------------------------------u-----*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM frm_refresh_alv USING p_grid TYPE REF TO cl_gui_alv_grid.
+
+  IF p_grid IS NOT INITIAL.
+
+    stbl-row = 'X'.
+    stbl-col = 'X'.
+    CALL METHOD p_grid->refresh_table_display
+      EXPORTING
+        is_stable      = stbl
+        i_soft_refresh = 'X'
+      EXCEPTIONS
+        finished       = 1
+        OTHERS         = 2.
+    IF sy-subrc <> 0.
+* Implement suitable error handling here
+    ENDIF.
+  ENDIF.
+ENDFORM.                    " FRM_REFRESH_ALV
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_UPLOAD_FILE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_upload_file .
+  DATA:
+    lv_result       ,
+    lv_xstring   TYPE xstring,
+    lv_fullname  TYPE dbmsgora-filename,
+    lv_filename  TYPE sdbah-actid,
+    lv_extension TYPE sdbad-funct,
+    ls_ztfile    TYPE ztfile,
+    lt_ztfile    TYPE TABLE OF ztfile,
+    lv_docid     TYPE zeoadocid,
+    ls_message   TYPE zcms0001.
+
+  PERFORM frm_get_file USING  '34' " 扣款单类型
+                       CHANGING ls_ztfile
+                                lv_xstring.
+
+  CHECK lv_xstring IS NOT INITIAL.
+
+  PERFORM frm_sent_to_oa USING ls_ztfile
+                               lv_xstring
+                         CHANGING  lv_docid
+                                   ls_message .
+  IF ls_message-msgty = 'E'.
+    MESSAGE TEXT-e01 TYPE 'S' DISPLAY LIKE 'E'.
+  ELSE.
+    ls_ztfile-zoadocid = lv_docid.
+    APPEND ls_ztfile TO lt_ztfile.
+    APPEND ls_ztfile TO gt_ztfile.
+
+    MODIFY ztfile FROM TABLE lt_ztfile.
+    IF sy-subrc EQ 0.
+      COMMIT WORK AND WAIT .
+      MESSAGE TEXT-s01 TYPE 'S' .
+    ELSE.
+      ROLLBACK WORK.
+    ENDIF.
+
+    DESCRIBE TABLE gt_fj_alv LINES DATA(lv_lines).
+    APPEND INITIAL LINE TO gt_fj_alv ASSIGNING FIELD-SYMBOL(<fs_alvdata>).
+    ADD 1 TO lv_lines.
+    MOVE-CORRESPONDING ls_ztfile TO <fs_alvdata>.
+    <fs_alvdata>-index = lv_lines.
+  ENDIF.
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_DEL_FILE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_del_file .
+  DATA: lt_save_data TYPE TABLE OF ztfile.
+  DATA: lt_row_no TYPE lvc_t_roid WITH HEADER LINE.
+
+  CALL METHOD g_grid_fj->get_selected_rows
+    IMPORTING
+      et_row_no = lt_row_no[].
+
+  LOOP AT lt_row_no.
+    READ TABLE gt_fj_alv INTO DATA(ls_alvdata) INDEX lt_row_no-row_id .
+    CHECK sy-subrc EQ 0.
+
+    READ TABLE gt_ztfile INTO DATA(ls_file) WITH KEY guid = ls_alvdata-guid.
+    CHECK sy-subrc EQ 0.
+    MOVE-CORRESPONDING ls_alvdata TO ls_file.
+
+    APPEND INITIAL LINE TO lt_save_data ASSIGNING FIELD-SYMBOL(<fs_save_data>).
+    MOVE-CORRESPONDING ls_file TO <fs_save_data>.
+    <fs_save_data>-zdelfg = 'X'. "  逻辑删除 添加删除标识
+
+    CLEAR:
+      ls_alvdata,
+      ls_file,
+      lt_row_no.
+  ENDLOOP.
+
+  IF sy-subrc NE 0.
+    MESSAGE '请先选中数据'TYPE 'S' DISPLAY LIKE 'E'.
+  ENDIF.
+
+  CHECK lt_save_data IS NOT INITIAL.
+  "  物理表更新
+  MODIFY ztfile FROM TABLE lt_save_data.
+  IF sy-subrc EQ 0.
+    COMMIT WORK AND WAIT.
+    MESSAGE '删除成功' TYPE 'S'.
+
+
+    "  ALV更新
+    LOOP AT lt_row_no.
+      READ TABLE gt_fj_alv INTO ls_alvdata INDEX lt_row_no-row_id .
+      CHECK sy-subrc EQ 0.
+
+      READ TABLE gt_ztfile INTO ls_file WITH KEY guid = ls_alvdata-guid.
+      CHECK sy-subrc EQ 0.
+
+      DELETE gt_fj_alv INDEX lt_row_no-row_id.
+      DELETE gt_ztfile WHERE guid = ls_alvdata-guid.
+
+      CLEAR:
+        ls_alvdata,
+        ls_file,
+        lt_row_no.
+    ENDLOOP.
+
+    CALL METHOD cl_gui_cfw=>flush.
+  ELSE.
+    ROLLBACK WORK.
+    MESSAGE '删除失败' TYPE 'S' DISPLAY LIKE 'E'.
+  ENDIF.
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_GET_FILE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      <-- LS_ZTMM_HTFJ_ALL
+*&---------------------------------------------------------------------*
+FORM frm_get_file  USING   uv_ztype TYPE ztfile-zfiletype
+                   CHANGING cs_ztfile TYPE ztfile
+                            cv_xstring TYPE xstring.
+  DATA:
+    lv_result       ,
+    lv_xstring   TYPE xstring,
+    lv_fullname  TYPE dbmsgora-filename,
+    lv_filename  TYPE dbmsgora-filename, "sdbah-actid
+    lv_extension TYPE sdok_fnext. "sdbad-funct.
+
+  CLEAR:
+    cv_xstring,
+    cs_ztfile.
+  lv_fullname = g_filename.
+  IF lv_fullname IS INITIAL.
+    MESSAGE TEXT-e02 TYPE 'S' DISPLAY LIKE 'E'.
+    RETURN.
+  ENDIF.
+
+  CALL FUNCTION 'WS_QUERY'
+    EXPORTING
+      filename  = lv_fullname
+      query     = 'FE'
+    IMPORTING
+      return    = lv_result
+    EXCEPTIONS
+      inv_query = 01
+      no_batch  = 02.
+  IF lv_result = '0'.  "record =0 表示文件不存在
+    MESSAGE TEXT-e03 TYPE 'S' DISPLAY LIKE 'E'.
+    RETURN.
+  ELSE."record = 1 表示文件不存在
+
+  ENDIF.
+
+  CALL FUNCTION 'ZSPLIT_FILENAME'
+    EXPORTING
+      long_filename  = lv_fullname
+    IMPORTING
+      pure_filename  = lv_filename
+      pure_extension = lv_extension.
+
+  TRY.
+      CALL METHOD cl_cnv_mbt_620_sprd_dyn_tab_io=>read_file_from_disk
+        EXPORTING
+          iv_file_path = g_filename
+        CHANGING
+          xv_file      = cv_xstring.
+
+    CATCH cx_sy_arithmetic_error INTO DATA(lv_error).
+      MESSAGE TEXT-e03 TYPE 'S' DISPLAY LIKE 'E'.
+      RETURN.
+    CATCH cx_cnv_mbt_620_sprd_io INTO DATA(lv_err).
+      MESSAGE TEXT-e04 TYPE 'S' DISPLAY LIKE 'E'.
+      RETURN.
+  ENDTRY.
+
+
+  PERFORM frm_get_next CHANGING cs_ztfile-guid.
+
+  cs_ztfile-zfiletype   =  uv_ztype. " '34'. " 扣款单
+*  cs_ztfile-zfilesize   =
+  cs_ztfile-extension   = lv_extension.
+  cs_ztfile-zfilenname  = lv_filename.
+*  cs_ztfile-zoaml       = '2553'. "测试目录ID
+*  cs_ztfile-zoadocid    =
+*  cs_ztfile-zdelfg      =
+  cs_ztfile-zkey1       = gs_ps011-zdjlx1.
+  cs_ztfile-zkey2       = gs_ps011-zdjbh.
+  cs_ztfile-zkey3       = gs_ps011-zfwht.
+  cs_ztfile-crname      = sy-uname.
+  cs_ztfile-crdat       = sy-datum.
+  cs_ztfile-crtim       = sy-uzeit.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form FRM_GET_NEXT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_get_next CHANGING cv_uuid TYPE guid.
+  DATA: lv_uuid TYPE guid.
+
+  TRY.
+      CALL METHOD cl_system_uuid=>create_uuid_x16_static
+        RECEIVING
+          uuid = cv_uuid.
+    CATCH cx_uuid_error .
+  ENDTRY.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FRM_SENT_TO_OA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> LS_ZTMM_HTFJ_ALL
+*&---------------------------------------------------------------------*
+FORM frm_sent_to_oa  USING    us_ztfile TYPE ztfile
+                              uv_xstring TYPE xstring
+                      CHANGING cv_docid   TYPE zeoadocid
+                               cs_message TYPE zcms0001.
+  DATA:lv_ztype TYPE zemltype.
+  DATA:lv_bukrs TYPE bukrs.
+  CLEAR:
+    cv_docid,
+    cs_message.
+
+  IF gs_ps011-zxmh IS NOT INITIAL.
+    SELECT SINGLE bukrs FROM ztmm_jbxx INTO @lv_bukrs WHERE zhtls = @gs_ps011-zhtbh AND pspid = @gs_ps011-zxmh.
+  ENDIF.
+
+  CASE lv_bukrs(1).
+    WHEN '1'.
+      lv_ztype = '10'.
+    WHEN '2'.
+      lv_ztype = '12'.
+    WHEN '3'.
+      lv_ztype = '13'.
+    WHEN '4'.
+      lv_ztype = '14'.
+    WHEN OTHERS.
+      lv_ztype = '10'.
+  ENDCASE.
+
+**
+**  DATA:lo_oa TYPE REF TO ZCO_EXPAND_SERVICE_PORT_TYPE.
+**  DATA:lv_request  TYPE ZOPERATE_DOC_BY_WORK_CODE_REQ1,
+**       lv_response TYPE ZOPERATE_DOC_BY_WORK_CODE_REQU,
+**    lv_buffer     TYPE xstring,
+**        lv_attachment TYPE string.
+**
+**   lv_buffer = uv_xstring.
+**  CALL FUNCTION 'SSFC_BASE64_ENCODE'
+**    EXPORTING
+**      bindata       = lv_buffer
+***     BINLENG       =
+**    IMPORTING
+**      b64data       = lv_attachment
+**    EXCEPTIONS
+**      ssf_krn_error = 1
+**      OTHERS        = 2.
+**
+**try .
+**  lv_request-in0 = '2553'.
+**  lv_request-in1 = '0'.
+**  lv_request-in2 = '10011373'.
+**  lv_request-in3 = us_ztfile-zfilenname.
+**  lv_request-in4 = us_ztfile-extension.
+**  lv_request-in5 = lv_attachment.
+**  lv_request-in6 = '{"KEY1":' &&  '"' && us_ztfile-zkey1 &&  '",' && '}'.
+**
+**   CREATE OBJECT lo_oa.
+***
+**        CALL METHOD lo_oa->OPERATE_DOC_BY_WORK_CODE_REQUE
+**          EXPORTING
+**            OPERATE_DOC_BY_WORK_CODE_REQU1 = lv_request
+**          IMPORTING
+**            OPERATE_DOC_BY_WORK_CODE_REQUE  = lv_response.
+****        IF lv_response-out > 0 .
+**
+**
+**  ENDTRY.
+  CALL FUNCTION 'ZS4_SEND_DOCUMENT_2_OA'
+    EXPORTING
+      iv_filetype = us_ztfile-extension
+      iv_filename = us_ztfile-zfilenname
+      iv_filedata = uv_xstring
+      iv_zifnam   = 'ZPSI011'
+      iv_ztype    = lv_ztype
+      iv_key1     = us_ztfile-zkey1
+      iv_key2     = us_ztfile-zkey2
+*     iv_key3     =
+*     iv_key4     =
+*     iv_key5     =
+    IMPORTING
+      ev_docid    = cv_docid
+      cs_message  = cs_message.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      FORM  FRM_DOUBLE_CLICK
+*&---------------------------------------------------------------------*
+*       TEXT
+*----------------------------------------------------------------------*
+*      -->P_E_ROW_ID  TEXT
+*      -->P_E_COLUMN_ID  TEXT
+*      -->P_ES_ROW_NO  TEXT
+*----------------------------------------------------------------------*
+
+FORM frm_double_click.
+  DATA:lv_token  TYPE string,
+       lv_id(10) TYPE c.
+  DATA: lv_cursor_fld TYPE char40,
+        lv_cursor_val TYPE char20.
+
+  GET CURSOR FIELD lv_cursor_fld VALUE lv_cursor_val.
+
+  IF lv_cursor_fld = 'GS_PS011-ZOAID'.
+    lv_id = gs_ps011-zoaid.
+
+    SELECT SINGLE pernr
+ INTO @DATA(lv_pernr)
+ FROM pa9500
+ WHERE bname = @sy-uname.     "deleted temporarily
+
+    CALL FUNCTION 'ZMM_GET_OA_TOKEN'
+      EXPORTING
+        iv_qqlx      = '1' "流程
+        iv_pernr     = lv_pernr  "员工号
+        iv_id        = lv_id    "请求ID
+      IMPORTING
+        iv_token_url = lv_token.
+
+    IF lv_token = ''.
+      MESSAGE w000(zmsg) WITH '获取链接失败' DISPLAY LIKE 'E'.
+      EXIT.
+    ENDIF.
+
+    DATA:lv_url(1000) TYPE c.
+    lv_url  = lv_token.
+    CALL FUNCTION 'CALL_BROWSER'
+      EXPORTING
+        url = lv_url "'lv_token     "'https://www.chimelong.com/'
+*       window_name = gs_header-zreqno
+*       NEW_WINDOW  = ' '
+*       BROWSER_TYPE                 =
+*       CONTEXTSTRING                =
+*     EXCEPTIONS
+*       FRONTEND_NOT_SUPPORTED       = 1
+*       FRONTEND_ERROR               = 2
+*       PROG_NOT_FOUND               = 3
+*       NO_BATCH    = 4
+*       UNSPECIFIED_ERROR            = 5
+*       OTHERS      = 6
+      .
+    IF sy-subrc <> 0.
+* Implement suitable error handling here
+    ENDIF.
+
+  ENDIF.
+
+
+ENDFORM. " FRM_DOUBLE_CLICK
+
+*&---------------------------------------------------------------------*
+*&      FORM  FRM_HOTSPOT_CLICK
+*&---------------------------------------------------------------------*
+*       TEXT
+*----------------------------------------------------------------------*
+*      -->P_E_ROW_ID  TEXT
+*      -->P_E_COLUMN_ID  TEXT
+*      -->P_ES_ROW_NO  TEXT
+*----------------------------------------------------------------------*
+FORM frm_hotspot_click USING p_e_row
+                              p_e_column_id
+                              p_es_row_no
+                              p_alv.
+  DATA:lv_token  TYPE string,
+       lv_id(10) TYPE c.
+
+
+  """""获取文档授权
+  DATA:gs_message TYPE zcms0001,
+       lv_zoaid   TYPE string.
+  DATA:lt_tab TYPE TABLE OF zsdocid_auth,
+       ls_tab TYPE zsdocid_auth.
+
+  IF p_alv = 'CONTAINER_FJ' .
+    CASE p_e_column_id . "判断列名
+      WHEN 'ZOADOCID'.
+        ASSIGN COMPONENT 'ROW_ID' OF STRUCTURE p_es_row_no TO FIELD-SYMBOL(<fs_index>).
+        CHECK <fs_index> IS ASSIGNED .
+        READ TABLE gt_fj_alv INTO DATA(ls_fj_alv) INDEX <fs_index>.
+        IF sy-subrc EQ 0.
+          lv_id = ls_fj_alv-zoadocid.
+          SELECT SINGLE pernr
+           INTO @DATA(lv_pernr)
+           FROM pa9500
+           WHERE bname = @sy-uname.     "deleted temporarily
+
+*----- 获取文档授权
+          IF ls_fj_alv-crname IS NOT INITIAL AND ls_fj_alv-crname <> sy-uname.
+            REFRESH:lt_tab.
+            ls_tab-wj = lv_id.    " 传文档id
+            ls_tab-zbsqr = lv_pernr.  " 传被授权人工号
+            APPEND ls_tab TO lt_tab.
+            CLEAR:ls_tab.
+            CALL FUNCTION 'Z_PO_SENT_FWOA'
+              EXPORTING
+                i_zifnam   = 'S4I002'
+                i_username = sy-uname
+              IMPORTING
+                e_oano     = lv_zoaid
+                e_message  = gs_message
+              TABLES
+                it_head    = lt_tab.
+*            IF gs_message-msgty EQ 'S'.
+*            ELSE.
+*              MESSAGE w000(zmsg) WITH '获取文档授权失败' DISPLAY LIKE 'E'.
+*            ENDIF.
+          ENDIF.
+
+          CALL FUNCTION 'ZMM_GET_OA_TOKEN'
+            EXPORTING
+              iv_qqlx      = '2' "文档
+              iv_pernr     = lv_pernr  "员工号
+              iv_id        = lv_id    "请求ID
+            IMPORTING
+              iv_token_url = lv_token.
+
+          IF lv_token = ''.
+            MESSAGE w000(zmsg) WITH '获取链接失败' DISPLAY LIKE 'E'.
+            EXIT.
+          ENDIF.
+
+          DATA:lv_url(1000) TYPE c.
+          lv_url  = lv_token.
+          CALL FUNCTION 'CALL_BROWSER'
+            EXPORTING
+              url = lv_url "'lv_token     "'https://www.chimelong.com/'
+*             window_name = gs_header-zreqno
+*             NEW_WINDOW  = ' '
+*             BROWSER_TYPE                 =
+*             CONTEXTSTRING                =
+*     EXCEPTIONS
+*             FRONTEND_NOT_SUPPORTED       = 1
+*             FRONTEND_ERROR               = 2
+*             PROG_NOT_FOUND               = 3
+*             NO_BATCH    = 4
+*             UNSPECIFIED_ERROR            = 5
+*             OTHERS      = 6
+            .
+          IF sy-subrc <> 0.
+* Implement suitable error handling here
+          ENDIF.
+        ENDIF.
+
+    ENDCASE.
+
+  ENDIF.
+
+
+ENDFORM. " FRM_HOTSPOT_CLICK
+
+
+
+**&---------------------------------------------------------------------*
+**&      FORM  FRM_CANCEL_DATA
+**&---------------------------------------------------------------------*
+**       TEXT
+**----------------------------------------------------------------------*
+**      -->P_ROW TEXT
+**      -->P_COLUMN  TEXT
+**      -->P_TEXT  TEXT
+**----------------------------------------------------------------------*
+FORM frm_cancel_data.
+  DATA:lv_answer.
+  DATA: ls_msg TYPE zcms0001.
+  DATA:lv_requestid  TYPE char20,
+       lv_sourceid   TYPE char20,
+       lv_goalnodeid TYPE char20.
+  DATA:lv_ifnam TYPE zcmeid,
+       lv_type  TYPE zetype.
+
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+      titlebar              = '作废确认'
+      text_question         = '是否作废该单据？'
+      text_button_1         = '是'
+      text_button_2         = '否'
+      display_cancel_button = ''
+    IMPORTING
+      answer                = lv_answer
+    EXCEPTIONS
+      text_not_found        = 1
+      OTHERS                = 2.
+  IF lv_answer EQ 1. "correct
+
+    IF gs_ps011-zoaid IS NOT INITIAL AND gs_ps011-zspzt1 EQ '10'."退回后的创建状态
+
+      lv_ifnam = 'PSI011'.
+
+      SELECT SINGLE pgmna,pgmna_t FROM ztps_oaid WHERE zifnam = @lv_ifnam INTO @DATA(ls_oaid).
+
+      lv_requestid  = gs_ps011-zoaid.
+      IF ls_oaid IS NOT INITIAL.
+        lv_sourceid   = ls_oaid-pgmna.
+        lv_goalnodeid = ls_oaid-pgmna_t.
+      ENDIF.
+
+      CALL FUNCTION 'ZS4_JUMP_NODEID_OA'
+        EXPORTING
+          requestid  = lv_requestid
+          sourceid   = lv_sourceid
+          goalnodeid = lv_goalnodeid
+*         k3_uname   =
+        IMPORTING
+          cs_message = ls_msg.
+
+      IF ls_msg-msgty NE 'E'.
+        gs_ps011-zspzt1 = '40'. "作废
+        PERFORM frm_get_domain_value_text USING gs_ps011-zspzt1
+                                        'ZDSPZT'
+                                        gs_ps011-zspzt2.
+
+        gs_ps011-zsprq = sy-datum.
+        gs_ps011-zspsj = sy-uzeit.
+        gs_ps011-zspry = sy-uname.
+
+        MODIFY ztps0011 FROM gs_ps011.
+        COMMIT WORK AND WAIT.
+        MESSAGE '该单已作废。' TYPE 'S'.
+        gv_mode = gc_mode_display.
+      ELSE.
+*      ROLLBACK WORK.
+        MESSAGE ls_msg-message TYPE 'E'.
+      ENDIF.
+
+    ENDIF.
+
+  ELSE.
+    ROLLBACK WORK.
+    MESSAGE '操作取消' TYPE 'S' .
+
+  ENDIF.
+
+
+ENDFORM.
+
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_ALV_GRID_9001
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_alv_grid_9001 .
+
+
+  IF g_con_i IS INITIAL.
+
+*    PERFORM frm_get_i_data.
+
+    PERFORM frm_ini_alv USING g_container_i g_con_i g_grid_i.
+    PERFORM frm_inject_act USING g_grid_i g_event_receiver_i 'CONTAINER_I'.
+    PERFORM frm_exclude_toolbar.
+
+    g_layout_i-sel_mode    = 'D'.
+    g_layout_i-no_toolbar  = 'X'.
+    g_layout_i-stylefname = 'CELLTAB'.
+    g_layout_i-cwidth_opt = ''.  """优化列宽度
+    g_layout_i-zebra = space .
+    g_layout_i-sel_mode = 'D'.
+    g_layout_i-ctab_fname = 'COLTAB'.
+*    gs_layout-info_fname  = 'ROWCOLOR'.
+
+    PERFORM frm_fill_fieldcat_i.
+
+    LOOP AT gt_fieldcat_i ASSIGNING FIELD-SYMBOL(<fs_fieldcat_i>).
+      IF <fs_fieldcat_i>-fieldname = 'STATUS'.
+        <fs_fieldcat_i>-no_out = 'X'.
+      ENDIF.
+    ENDLOOP.
+
+    CALL METHOD g_grid_i->set_frontend_fieldcatalog
+      EXPORTING
+        it_fieldcatalog = gt_fieldcat_i.
+
+    CALL METHOD g_grid_i->set_table_for_first_display
+      EXPORTING
+        is_layout            = g_layout_i
+        it_toolbar_excluding = gt_exclude
+      CHANGING
+        it_outtab            = gt_fwitem[]
+        it_fieldcatalog      = gt_fieldcat_i[].
+
+    PERFORM frm_set_f4_action USING g_event_receiver_i.
+
+  ELSE.
+    PERFORM frm_refresh_alv USING g_grid_i.
+  ENDIF.
+
+ENDFORM.
+
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_FILL_FIELDCAT_I
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_fill_fieldcat_i .
+  DATA:
+    lt_fieldcat TYPE lvc_t_fcat,
+    ls_fieldcat LIKE lvc_s_fcat.
+
+  DEFINE add_fieldcat.
+    CLEAR ls_fieldcat.
+    ls_fieldcat-ref_table     =  &1.
+    ls_fieldcat-ref_field     =  &2.
+    ls_fieldcat-fieldname     =  &3.
+    ls_fieldcat-reptext       =  &4.
+    ls_fieldcat-outputlen     =  &5.
+    ls_fieldcat-hotspot       =  &6.
+    ls_fieldcat-checkbox      =  &7.
+    ls_fieldcat-edit          =  &8.
+    ls_fieldcat-f4availabl    =  &9.
+    APPEND ls_fieldcat TO lt_fieldcat.
+  END-OF-DEFINITION.
+
+
+  add_fieldcat  ''               ''          'INDEX'        '序号'                      '4'    ''  ''    ''   ''   .
+  add_fieldcat  ''               ''          'CHK'          '勾选框'                    '5'    ''  'X'   'X'  ''    .
+  add_fieldcat  ''               ''          'STATUS'       '状态'                      '30'   ''  ''    ''   ''   .
+  add_fieldcat  'ZTPS0011_FW'    'ZHTBH'     'ZHTBH'        '合同流水号'                '10'   ''  ''    ''   ''      .
+  add_fieldcat  'T001'           'BUKRS'     'ZSKGS'        '收款公司'                  '8'    ''  ''    'X'  'X'    .
+  add_fieldcat  'ZTPS0011_FW'    'ZSKGSMC'   'ZSKGSMC'      '收款公司名称'              '30'   ''  ''    ''   ''       .
+  add_fieldcat  'CSKS'           'KOSTL'     'KOSTL'        '成本中心'                  '20'   ''  ''    'X'  'X'    .
+  add_fieldcat  'ZTPS0011_FW'    'KTEXT'     'KTEXT'        '成本中心描述'              '20'   ''  ''    ''   ''       .
+  add_fieldcat  'PRPS'           'POSID'     'POSID'        'WBS'                       '20'   ''  ''    'X'  'X'.
+  add_fieldcat  'ZTPS0011_FW'    'POST1'     'POST1'        'WBS名称'                   '20'   ''  ''    ''   ''   .
+  add_fieldcat  'ZTPS0011_FW'    'ZKKJE'     'ZKKJE'        '扣款金额'                  '20'   ''  ''    'X'  ''     .
+  add_fieldcat  'ZTPS0011_FW'    'ZGLFJE'    'ZGLFJE'       '管理费'                    '20'   ''  ''    'X'  ''    .
+  add_fieldcat  'ZTPS0011_FW'    'ZYDL'      'ZYDL'         '用电量（度）'              '20'   ''  ''    'X'  ''       .                                                                       .
+  add_fieldcat  'ZTPS0011_FW'    'ZYSL'      'ZYSL'         '用水量（吨）'              '20'   ''  ''    'X'  ''       .                                                                          .
+
+
+  gt_fieldcat_i = lt_fieldcat.
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_GET_I_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_get_i_data.
+  DATA: lt_ztps_fylx TYPE TABLE OF ztps_fylx. ""费用类型配置表
+  DATA:lv_index TYPE i.
+  CLEAR:lv_index.
+
+  """控制ALV属性-单元格类型表
+  DATA: lt_style  TYPE lvc_t_styl,
+        lwa_style TYPE lvc_s_styl.
+
+  """控制ALV属性-单元格颜色表
+  DATA:lt_cellcolor  TYPE lvc_t_scol,
+       lwa_cellcolor TYPE lvc_s_scol.
+
+  CLEAR:gt_fwitem,gs_fwitem.
+
+  IF gs_ps011-zhtbh IS NOT INITIAL.
+
+    SELECT
+      jb~zhtls,
+      bd~bukrs,
+      bd~zline
+      INTO TABLE @DATA(lt_jbxx)
+      FROM ztmm_jbxx AS jb
+      LEFT JOIN ztmm_htbd AS bd
+      ON jb~zhtls = bd~zhtls
+      WHERE jb~zhtls = @gs_ps011-zhtbh
+      AND ( jb~statu = '4'
+      OR  jb~statu = '5'
+      OR jb~statu = '6' )
+      AND jb~spsta = '3'.
+
+    SORT lt_jbxx BY zline.
+    DELETE ADJACENT DUPLICATES FROM lt_jbxx COMPARING bukrs.
+
+    SELECT * INTO TABLE @DATA(lt_fwxx) FROM ztmm_fwxx FOR ALL ENTRIES IN @lt_jbxx WHERE zhtls = @lt_jbxx-zhtls AND zline = @lt_jbxx-zline.
+    SORT lt_fwxx BY zline.
+    DELETE ADJACENT DUPLICATES FROM  lt_fwxx COMPARING zline.
+
+
+    IF lt_jbxx IS NOT INITIAL.
+      LOOP AT lt_jbxx ASSIGNING FIELD-SYMBOL(<fs_jbxx>).
+        APPEND INITIAL LINE TO gt_fwitem ASSIGNING FIELD-SYMBOL(<fs_fwitem>).
+        lv_index = lv_index + 1.
+        <fs_fwitem>-index    = lv_index.           "序号
+        <fs_fwitem>-chk      = abap_true.         "勾选框
+        <fs_fwitem>-zdjbh    = gs_ps011-zdjbh.    "单据编号
+        <fs_fwitem>-zhtbh    = <fs_jbxx>-zhtls.    "合同流水号
+        <fs_fwitem>-zskgs    = <fs_jbxx>-bukrs.    "公司代码
+        SELECT SINGLE * FROM t001 INTO @DATA(ls_butxt) WHERE bukrs = @<fs_jbxx>-bukrs AND spras = 1.
+        <fs_fwitem>-zskgsmc  = ls_butxt-butxt."<fs_jbxx>-name1.    "公司代码名称
+
+
+*------ 控制：1罚款、2水费、3电费对应的成本中心和WBS号需要读取费用类型配置表对应数据；
+*-------      4制服、5卡证类需要取合同标的物对应的成本中心和WBS号。
+        IF gs_ps011-zkkfylx EQ '1' OR gs_ps011-zkkfylx EQ '2' OR gs_ps011-zkkfylx EQ '3' .  """"罚款、水费、电费
+
+          IF <fs_fwitem>-zskgs IS ASSIGNED AND <fs_fwitem>-zskgs IS NOT INITIAL.
+            SELECT SINGLE * INTO @DATA(ls_fylx) FROM ztps_fylx WHERE zkkfylx = @gs_ps011-zkkfylx AND bukrs = @<fs_fwitem>-zskgs.
+            IF sy-subrc = 0.
+              <fs_fwitem>-kostl    = ls_fylx-kostl.    "成本中心
+              SELECT SINGLE ktext FROM cskt INTO @DATA(ls_ktext) WHERE kostl = @ls_fylx-kostl AND datbi = '99991231'.
+              <fs_fwitem>-ktext    = ls_ktext.           "成本中心描述
+              <fs_fwitem>-posid    = ls_fylx-posid.    "WBS元素
+              SELECT SINGLE post1 FROM prps INTO @DATA(ls_post1) WHERE posid = @ls_fylx-posid.
+              <fs_fwitem>-post1    = ls_post1.           "WBS描述
+            ENDIF.
+
+          ENDIF.
+
+
+        ELSEIF gs_ps011-zkkfylx EQ '4' OR gs_ps011-zkkfylx EQ '5' OR gs_ps011-zkkfylx EQ '6'.   """"制服、卡证类、饭堂宿舍
+
+          READ TABLE lt_fwxx ASSIGNING FIELD-SYMBOL(<fs_fwxx>) WITH KEY zhtls = <fs_jbxx>-zhtls zline = <fs_jbxx>-zline BINARY SEARCH.
+          IF sy-subrc = 0.
+            <fs_fwitem>-kostl    = <fs_fwxx>-kostl.    "成本中心
+            SELECT SINGLE ktext FROM cskt INTO @ls_ktext WHERE kostl = @<fs_fwxx>-kostl AND datbi = '99991231'.
+            <fs_fwitem>-ktext    = ls_ktext.           "成本中心描述
+            <fs_fwitem>-posid    = <fs_fwxx>-posid.    "WBS元素
+            SELECT SINGLE post1 FROM prps INTO @ls_post1 WHERE posid = @<fs_fwxx>-posid.
+            <fs_fwitem>-post1    = ls_post1.           "WBS描述
+          ENDIF.
+
+        ENDIF.
+
+        <fs_fwitem>-zkkje    = '0.00'.             "扣款金额
+        <fs_fwitem>-zydl     = '0.00'.             "用电量
+        <fs_fwitem>-zysl     = '0.00'.             "用水量
+        <fs_fwitem>-zglfje   = '0.00'.             "管理费（用电量专用）
+
+        IF <fs_fwitem>-zdel EQ abap_true.
+
+          """"勾选框不可勾选 start
+          lwa_style-fieldname = 'CHK'.
+          lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+          APPEND lwa_style TO lt_style.
+          CLEAR lwa_style.
+          <fs_fwitem>-celltab = lt_style.
+          CLEAR lt_style.
+
+          lwa_cellcolor-fname = 'CHK'.
+          lwa_cellcolor-color-col = '20'.
+          APPEND lwa_cellcolor TO lt_cellcolor.
+          CLEAR lwa_cellcolor.
+          <fs_fwitem>-coltab = lt_cellcolor.
+          CLEAR lt_cellcolor.
+          """"勾选框不可勾选 end
+
+        ENDIF.
+
+      ENDLOOP.
+    ENDIF.
+  ENDIF.
+
+
+
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_DEL_FWITEM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_del_fwitem.
+
+  DATA: lt_fwdata TYPE TABLE OF ztps0011_fw.
+  DATA: lt_row_no TYPE lvc_t_roid WITH HEADER LINE.
+  DATA: lt_scol TYPE lvc_t_scol, ""控制单元格颜色
+        ls_scol TYPE lvc_s_scol.
+  DATA: lt_style  TYPE lvc_t_styl, ""控制单元格是否可编辑
+        lwa_style TYPE lvc_s_styl.
+
+
+  LOOP AT gt_fwitem ASSIGNING FIELD-SYMBOL(<fs_alvdata>) WHERE chk EQ abap_true.
+    APPEND INITIAL LINE TO lt_fwdata ASSIGNING FIELD-SYMBOL(<fs_fwdata>).
+    MOVE-CORRESPONDING <fs_alvdata> TO <fs_fwdata>.
+    <fs_fwdata>-zdel = abap_true. "  逻辑删除 添加删除标识
+
+  ENDLOOP.
+
+  IF sy-subrc NE 0.
+    MESSAGE '请先选中数据'TYPE 'S' DISPLAY LIKE 'E'.
+  ENDIF.
+
+  CHECK lt_fwdata IS NOT INITIAL.
+  "  物理表更新
+  MODIFY ztps0011_fw FROM TABLE lt_fwdata.
+  IF sy-subrc EQ 0.
+    COMMIT WORK AND WAIT.
+    MESSAGE '删除成功' TYPE 'S'.
+
+
+    "  ALV更新
+
+    LOOP AT gt_fwitem ASSIGNING <fs_alvdata>  WHERE chk EQ abap_true.
+
+      DATA(icon) = icon_green_light.
+      <fs_alvdata>-status = icon && '已删除，发起审批时将不包含此行'.  "更改状态
+      <fs_alvdata>-zdel = abap_true. "  逻辑删除 添加删除标识
+**      """"单元格颜色变更 start
+**      ls_scol-fname = 'CHK'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'ZSKGS'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'KOSTL'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'POSID'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'ZKKJE'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'ZGLFJE'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'ZYSL'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'ZYDL'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**      <fs_alvdata>-coltab = lt_scol.
+**      CLEAR lt_scol.
+**      """"单元格颜色变更 end
+
+
+      """"控制单元格编辑状态 start
+      CLEAR <fs_alvdata>-celltab.
+*      lwa_style-fieldname = 'CHK'.
+*      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+*      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+*      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZSKGS'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZSKGSMC'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'KOSTL'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'KTEXT'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'POSID'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'POST1'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZKKJE'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZGLFJE'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZYSL'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZYDL'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+      CLEAR lwa_style.
+
+*      <fs_alvdata>-celltab = lt_style.
+*      CLEAR lt_style.
+
+      """"控制单元格编辑状态 end
+    ENDLOOP.
+
+    LOOP AT gt_fieldcat_i ASSIGNING FIELD-SYMBOL(<fs_fieldcat_i>).
+      IF <fs_fieldcat_i>-fieldname = 'STATUS'.
+        <fs_fieldcat_i>-no_out = ''.
+      ENDIF.
+    ENDLOOP.
+
+    CALL METHOD g_grid_i->set_frontend_fieldcatalog
+      EXPORTING
+        it_fieldcatalog = gt_fieldcat_i.
+
+    CALL METHOD cl_gui_cfw=>flush.
+  ELSE.
+    ROLLBACK WORK.
+    MESSAGE '删除失败' TYPE 'S' DISPLAY LIKE 'E'.
+  ENDIF.
+
+
+
+ENDFORM.
+
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_CLDEL_FWITEM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_cldel_fwitem.
+
+  DATA: lt_fwdata TYPE TABLE OF ztps0011_fw.
+  DATA: lt_row_no TYPE lvc_t_roid WITH HEADER LINE.
+  DATA: lt_scol TYPE lvc_t_scol, ""控制单元格颜色
+        ls_scol TYPE lvc_s_scol.
+  DATA: lt_style  TYPE lvc_t_styl, ""控制单元格是否可编辑
+        lwa_style TYPE lvc_s_styl.
+
+
+  LOOP AT gt_fwitem ASSIGNING FIELD-SYMBOL(<fs_alvdata>) WHERE chk EQ abap_true.
+    APPEND INITIAL LINE TO lt_fwdata ASSIGNING FIELD-SYMBOL(<fs_fwdata>).
+    MOVE-CORRESPONDING <fs_alvdata> TO <fs_fwdata>.
+    <fs_fwdata>-zdel = abap_false. "  逻辑删除 取消删除标识
+  ENDLOOP.
+
+  IF sy-subrc NE 0.
+    MESSAGE '请先选中数据'TYPE 'S' DISPLAY LIKE 'E'.
+  ENDIF.
+
+  CHECK lt_fwdata IS NOT INITIAL.
+  "  物理表更新
+  MODIFY ztps0011_fw FROM TABLE lt_fwdata.
+  IF sy-subrc EQ 0.
+    COMMIT WORK AND WAIT.
+    MESSAGE '取消删除成功' TYPE 'S'.
+
+
+    "  ALV更新
+
+    LOOP AT gt_fwitem ASSIGNING <fs_alvdata>  WHERE chk EQ abap_true.
+      DATA(icon) = icon_green_light.
+      <fs_alvdata>-status = icon && '已取消删除，发起审批时将包含此行'.  "更改状态
+      <fs_alvdata>-zdel = abap_false. "  逻辑删除 取消删除标识
+
+**      """"单元格颜色变更 start
+**      ls_scol-fname = 'CHK'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'ZSKGS'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'KOSTL'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'POSID'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'ZKKJE'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'ZGLFJE'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'ZYSL'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**
+**      ls_scol-fname = 'ZYDL'.
+**      ls_scol-color-col = '30'.
+**      APPEND ls_scol TO lt_scol.
+**      CLEAR ls_scol.
+**      <fs_alvdata>-coltab = lt_scol.
+**      CLEAR lt_scol.
+**      """"单元格颜色变更 end
+
+
+      """"控制单元格编辑状态 start
+*      lwa_style-fieldname = 'CHK'.
+*      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+*      INSERT lwa_style INTO TABLE <fs_alvdata>-celltab.
+*      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZSKGS'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+      INSERT lwa_style INTO TABLE lt_style.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZSKGSMC'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE lt_style.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'KOSTL'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+      INSERT lwa_style INTO TABLE lt_style.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'KTEXT'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE lt_style.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'POSID'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+      INSERT lwa_style INTO TABLE lt_style.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'POST1'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_disabled.
+      INSERT lwa_style INTO TABLE lt_style.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZKKJE'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+      INSERT lwa_style INTO TABLE lt_style.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZGLFJE'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+      INSERT lwa_style INTO TABLE lt_style.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZYSL'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+      INSERT lwa_style INTO TABLE lt_style.
+      CLEAR lwa_style.
+
+      lwa_style-fieldname = 'ZYDL'.
+      lwa_style-style = cl_gui_alv_grid=>mc_style_enabled.
+      INSERT lwa_style INTO TABLE lt_style.
+      CLEAR lwa_style.
+
+      <fs_alvdata>-celltab = lt_style.
+      CLEAR lt_style.
+
+      """"控制单元格编辑状态 end
+    ENDLOOP.
+
+    LOOP AT gt_fieldcat_i ASSIGNING FIELD-SYMBOL(<fs_fieldcat_i>).
+      IF <fs_fieldcat_i>-fieldname = 'STATUS'.
+        <fs_fieldcat_i>-no_out = ''.
+      ENDIF.
+    ENDLOOP.
+
+    CALL METHOD g_grid_i->set_frontend_fieldcatalog
+      EXPORTING
+        it_fieldcatalog = gt_fieldcat_i.
+
+    CALL METHOD cl_gui_cfw=>flush.
+  ELSE.
+    ROLLBACK WORK.
+    MESSAGE '取消删除失败' TYPE 'S' DISPLAY LIKE 'E'.
+  ENDIF.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form FRM_APP_FWITEM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_app_fwitem.
+
+  DATA: lt_fwdata TYPE TABLE OF ztps0011_fw.
+  DATA: lt_row_no TYPE lvc_t_roid WITH HEADER LINE.
+  DATA: lt_scol TYPE lvc_t_scol, ""控制单元格颜色
+        ls_scol TYPE lvc_s_scol.
+  DATA: lt_style  TYPE lvc_t_styl, ""控制单元格是否可编辑
+        lwa_style TYPE lvc_s_styl.
+  DATA: lv_index TYPE i.
+
+
+  CLEAR lv_index.
+  lv_index = lines( gt_fwitem ).
+  IF lv_index > 0.
+    APPEND INITIAL LINE TO gt_fwitem ASSIGNING FIELD-SYMBOL(<fs_alvdata>).
+    ADD 1 TO lv_index.
+    <fs_alvdata>-index = lv_index.
+    <fs_alvdata>-zhtbh = gs_ps011-zhtbh.
+  ENDIF.
+
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_SET_F4_ACTION
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_set_f4_action USING e_event_receiver_i TYPE REF TO lc_event_receiver."CHANGING et_f4 TYPE lvc_t_f4 .
+
+  DATA:lt_f4 TYPE lvc_t_f4,
+       ls_f4 TYPE lvc_s_f4.
+
+
+  CLEAR:ls_f4.
+  ls_f4-fieldname  = 'BUKRS'.
+  ls_f4-register   = 'X'.
+  ls_f4-getbefore  = 'X'.
+  ls_f4-chngeafter = ''.
+  ls_f4-internal   = ''.
+  APPEND ls_f4 TO lt_f4.
+  CLEAR:ls_f4.
+  ls_f4-fieldname  = 'KOSTL'.
+  ls_f4-register   = 'X'.
+  ls_f4-getbefore  = 'X'.
+  ls_f4-chngeafter = ''.
+  ls_f4-internal   = ''.
+  APPEND ls_f4 TO lt_f4.
+  CLEAR:ls_f4.
+  ls_f4-fieldname  = 'POSID'.
+  ls_f4-register   = 'X'.
+  ls_f4-getbefore  = 'X'.
+  ls_f4-chngeafter = ''.
+  ls_f4-internal   = ''.
+  APPEND ls_f4 TO lt_f4.
+
+  CALL METHOD g_grid_i->register_f4_for_fields
+    EXPORTING
+      it_f4 = lt_f4.
+
+*  CREATE OBJECT g_event_receiver_i.
+  SET HANDLER e_event_receiver_i->on_f4_help FOR g_grid_i .
+
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      FORM  FRM_F4_HELP
+*&---------------------------------------------------------------------*
+*       TEXT
+*----------------------------------------------------------------------*
+*      -->P_E_FIELDNAME  TEXT
+*      -->P_ES_ROW_NO  TEXT
+*      -->P_ER_EVENT_DATA  TEXT
+*      -->P_ET_BAD_CELLS  TEXT
+*      -->P_E_DISPLAY  TEXT
+*      -->P_GC_ALV  TEXT
+*----------------------------------------------------------------------*
+
+FORM frm_f4_help USING p_fieldname TYPE lvc_fname
+                       p_row_no           TYPE lvc_s_roid
+                       p_er_event_data    TYPE REF TO cl_alv_event_data
+                       p_et_bad_cells     TYPE lvc_t_modi
+                       p_display          TYPE char01
+                       p_alv.
+
+  DATA: lv_value TYPE lvc_value.
+
+  FIELD-SYMBOLS: <itab> TYPE lvc_t_modi.
+
+  DATA: ls_modi TYPE lvc_s_modi.
+
+  ASSIGN p_er_event_data->m_data->* TO <itab>.
+
+  CASE p_fieldname.
+    WHEN 'ZSKGS'.
+      PERFORM frm_zskgs_f4 USING p_fieldname p_row_no-row_id p_et_bad_cells p_er_event_data CHANGING lv_value.
+    WHEN 'KOSTL'.
+      PERFORM frm_kostl_f4 USING p_fieldname p_row_no-row_id p_et_bad_cells p_er_event_data CHANGING lv_value .
+    WHEN 'POSID'.
+      PERFORM frm_posid_f4 USING p_fieldname p_row_no-row_id p_et_bad_cells p_er_event_data CHANGING lv_value .
+
+******
+******    WHEN 'LGART'.
+******      PERFORM frm_lgart_f4 USING p_fieldname p_row_no-row_id.
+  ENDCASE.
+
+
+  IF lv_value IS NOT INITIAL .
+    ls_modi-row_id    = p_row_no-row_id.
+
+    ls_modi-fieldname = p_fieldname.
+
+    ls_modi-value     = lv_value.
+
+    APPEND ls_modi TO <itab>.
+  ENDIF.
+
+
+ENDFORM. " FRM_F4_HELP
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_ZSKGS_F4
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_zskgs_f4 USING f_fieldname TYPE lvc_fname
+                        f_row_no-row_id TYPE lvc_s_roid-row_id
+                        f_et_bad_cells TYPE lvc_t_modi
+                         rr_event_data TYPE REF TO cl_alv_event_data
+                CHANGING lv_value.
+
+  TYPES:BEGIN OF ty_zskgs,
+          bukrs TYPE bukrs,
+          butxt TYPE butxt,
+        END OF ty_zskgs.
+  DATA:lt_zskgs TYPE TABLE OF ty_zskgs,
+       ls_zskgs TYPE ty_zskgs.
+
+  DATA:f_es_bad_cells TYPE lvc_s_modi.
+
+  IF g_grid_i->is_ready_for_input( ) = 0 .
+    rr_event_data->m_event_handled = 'X'.
+    EXIT.
+  ENDIF .
+
+  CLEAR ls_zskgs.
+
+  SELECT bukrs,butxt FROM t001 INTO CORRESPONDING FIELDS OF TABLE @lt_zskgs WHERE spras = 1.
+
+  SORT lt_zskgs BY bukrs.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      retfield        = f_fieldname
+      value_org       = 'S'
+      dynpprog        = sy-repid
+      dynpnr          = sy-dynnr
+*     dynprofield     = uv_field
+    TABLES
+      value_tab       = lt_zskgs
+      return_tab      = lt_return
+    EXCEPTIONS
+      parameter_error = 1
+      no_values_found = 2
+      OTHERS          = 3.
+
+*  ASSIGN rr_event_data->m_data->* TO .
+
+  IF sy-subrc = 0.
+    READ TABLE lt_return ASSIGNING FIELD-SYMBOL(<fs_return>) INDEX 1.
+    IF sy-subrc = 0  AND <fs_return>-fieldval IS NOT INITIAL.
+      f_es_bad_cells-value    = <fs_return>-fieldval.
+    ENDIF.
+
+    f_es_bad_cells-fieldname = f_fieldname.
+    f_es_bad_cells-row_id    = f_row_no-row_id.
+    APPEND f_es_bad_cells TO f_et_bad_cells.
+  ENDIF.
+
+  lv_value = f_es_bad_cells-value.
+
+  PERFORM frm_refresh_alv USING g_grid_i.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form FRM_KOSTL_F4
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_kostl_f4 USING f_fieldname TYPE lvc_fname
+                        f_row_no-row_id TYPE lvc_s_roid-row_id
+                        f_et_bad_cells TYPE lvc_t_modi
+                         rr_event_data TYPE REF TO cl_alv_event_data
+                CHANGING lv_value.
+
+  TYPES:BEGIN OF ty_kostl,
+          kostl TYPE kostl,
+          bukrs TYPE bukrs,
+          ktext TYPE ktext,
+        END OF ty_kostl.
+  DATA:lt_kostl  TYPE TABLE OF ty_kostl,
+       ls_kostl  TYPE ty_kostl,
+       lt_kostl1 TYPE TABLE OF ty_kostl.
+
+  DATA:f_es_bad_cells TYPE lvc_s_modi.
+
+  IF g_grid_i->is_ready_for_input( ) = 0 .
+    rr_event_data->m_event_handled = 'X'.
+    EXIT.
+  ENDIF .
+
+  CLEAR ls_kostl.
+
+  SELECT s~kostl,s~bukrs,t~ktext FROM csks AS s LEFT JOIN cskt AS t ON s~kostl = t~kostl INTO CORRESPONDING FIELDS OF TABLE @lt_kostl WHERE t~spras = 1.
+
+  READ TABLE gt_fwitem ASSIGNING FIELD-SYMBOL(<fs_fw>) INDEX f_row_no-row_id.
+  IF sy-subrc = 0.
+
+    LOOP AT lt_kostl ASSIGNING FIELD-SYMBOL(<fs_kostl>) WHERE bukrs = <fs_fw>-zskgs.
+
+      APPEND INITIAL LINE TO lt_kostl1 ASSIGNING FIELD-SYMBOL(<fs_kostl1>).
+      MOVE-CORRESPONDING <fs_kostl> TO <fs_kostl1>.
+    ENDLOOP.
+
+
+  ENDIF.
+
+  SORT lt_kostl1 BY kostl.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      retfield        = f_fieldname
+      value_org       = 'S'
+      dynpprog        = sy-repid
+      dynpnr          = sy-dynnr
+*     dynprofield     = uv_field
+    TABLES
+      value_tab       = lt_kostl1
+      return_tab      = lt_return
+    EXCEPTIONS
+      parameter_error = 1
+      no_values_found = 2
+      OTHERS          = 3.
+
+*  ASSIGN rr_event_data->m_data->* TO .
+
+  IF sy-subrc = 0.
+    READ TABLE lt_return ASSIGNING FIELD-SYMBOL(<fs_return>) INDEX 1.
+    IF sy-subrc = 0  AND <fs_return>-fieldval IS NOT INITIAL.
+      f_es_bad_cells-value    = <fs_return>-fieldval.
+    ENDIF.
+
+    f_es_bad_cells-fieldname = f_fieldname.
+    f_es_bad_cells-row_id    = f_row_no-row_id.
+    APPEND f_es_bad_cells TO f_et_bad_cells.
+  ENDIF.
+
+  lv_value = f_es_bad_cells-value.
+
+  PERFORM frm_refresh_alv USING g_grid_i.
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_POSID_F4
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_posid_f4 USING f_fieldname TYPE lvc_fname
+                        f_row_no-row_id TYPE lvc_s_roid-row_id
+                        f_et_bad_cells TYPE lvc_t_modi
+                        rr_event_data TYPE REF TO cl_alv_event_data
+                 CHANGING lv_value.
+
+  TYPES:BEGIN OF ty_posid,
+          posid TYPE ps_posid,
+          pbukr TYPE ps_pbukr,
+          post1 TYPE ps_post1,
+        END OF ty_posid.
+  DATA:lt_posid  TYPE TABLE OF ty_posid,
+       ls_posid  TYPE ty_posid,
+       lt_posid1 TYPE TABLE OF ty_posid.
+
+  DATA:f_es_bad_cells TYPE lvc_s_modi.
+
+  IF g_grid_i->is_ready_for_input( ) = 0 .
+    rr_event_data->m_event_handled = 'X'.
+    EXIT.
+  ENDIF .
+
+  CLEAR ls_posid.
+
+  SELECT posid,pbukr,post1 FROM prps INTO CORRESPONDING FIELDS OF TABLE @lt_posid.
+
+  READ TABLE gt_fwitem ASSIGNING FIELD-SYMBOL(<fs_fw>) INDEX f_row_no-row_id.
+  IF sy-subrc = 0.
+
+    LOOP AT lt_posid ASSIGNING FIELD-SYMBOL(<fs_posid>) WHERE pbukr = <fs_fw>-zskgs.
+
+      APPEND INITIAL LINE TO lt_posid1 ASSIGNING FIELD-SYMBOL(<fs_posid1>).
+      MOVE-CORRESPONDING <fs_posid> TO <fs_posid1>.
+    ENDLOOP.
+
+
+  ENDIF.
+
+  SORT lt_posid1 BY posid.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      retfield        = f_fieldname
+      value_org       = 'S'
+      dynpprog        = sy-repid
+      dynpnr          = sy-dynnr
+*     dynprofield     = uv_field
+    TABLES
+      value_tab       = lt_posid1
+      return_tab      = lt_return
+    EXCEPTIONS
+      parameter_error = 1
+      no_values_found = 2
+      OTHERS          = 3.
+
+  IF sy-subrc = 0.
+    READ TABLE lt_return ASSIGNING FIELD-SYMBOL(<fs_return>) INDEX 1.
+    IF sy-subrc = 0  AND <fs_return>-fieldval IS NOT INITIAL.
+      f_es_bad_cells-value = <fs_return>-fieldval.
+
+    ENDIF.
+
+    f_es_bad_cells-fieldname = f_fieldname.
+    f_es_bad_cells-row_id    = f_row_no-row_id.
+    APPEND f_es_bad_cells TO f_et_bad_cells.
+  ENDIF.
+
+  lv_value = f_es_bad_cells-value.
+
+  PERFORM frm_refresh_alv USING g_grid_i.
+
+
+ENDFORM.
+
+
+
+*&---------------------------------------------------------------------*
+*&      FORM  FRM_DATA_CHANGED
+*&---------------------------------------------------------------------*
+*       TEXT
+*----------------------------------------------------------------------*
+*      -->RR_DATA_CHANGED  TEXT
+*      -->EC_ALV  TEXT
+*----------------------------------------------------------------------*
+FORM frm_data_changed USING rr_data_changed TYPE REF TO cl_alv_changed_data_protocol
+                         ec_alv.
+
+  FIELD-SYMBOLS: <f_value> TYPE lvc_s_modi-value .
+  FIELD-SYMBOLS: <f_field> TYPE any .
+  DATA : lt_modi TYPE lvc_t_modi,
+         ls_modi TYPE lvc_s_modi.
+
+  DATA:lv_zskgs      TYPE t001-bukrs,
+       lv_kostl      TYPE csks-kostl,
+       lv_posid      TYPE prps-posid,
+       lv_zydl       TYPE ztps0011_fw-zydl,
+       lv_zysl       TYPE ztps0011_fw-zysl,
+       lv_zglfje     TYPE ztps0011_fw-zglfje,
+       lv_zkkje      TYPE ztps0011_fw-zkkje,
+       error_in_data.
+
+
+  lt_modi = rr_data_changed->mt_mod_cells.
+
+  IF ec_alv = 'CONTAINER_I'.
+
+    LOOP AT lt_modi INTO ls_modi.
+      IF ls_modi-fieldname = 'ZSKGS'.
+
+        CALL METHOD rr_data_changed->get_cell_value
+          EXPORTING
+            i_row_id    = ls_modi-row_id
+            i_fieldname = 'ZSKGS'
+          IMPORTING
+            e_value     = lv_zskgs.
+
+        SELECT SINGLE * FROM t001 INTO @DATA(lv_check_bukrs) WHERE spras = 1 AND bukrs = @lv_zskgs.
+
+        IF sy-subrc <> 0.
+
+          CALL METHOD rr_data_changed->add_protocol_entry
+            EXPORTING
+              i_msgid     = 'ZMM03'
+              i_msgno     = '000'
+              i_msgty     = 'E'
+              i_msgv1     = '输入的收款公司: '
+              i_msgv2     = lv_zskgs
+              i_msgv3     = ' 非有效'
+              i_fieldname = ls_modi-fieldname
+              i_row_id    = ls_modi-row_id.
+
+          error_in_data = 'X'.
+
+        ENDIF.
+
+        READ TABLE gt_t001 INTO DATA(ls_t001) WITH KEY bukrs = lv_zskgs.
+        IF sy-subrc = 0 .
+          CALL METHOD rr_data_changed->modify_cell
+            EXPORTING
+              i_row_id    = ls_modi-row_id
+              i_fieldname = 'ZSKGSMC'
+              i_value     = ls_t001-butxt.
+        ENDIF.
+
+
+      ELSEIF ls_modi-fieldname = 'KOSTL'.
+
+        CALL METHOD rr_data_changed->get_cell_value
+          EXPORTING
+            i_row_id    = ls_modi-row_id
+            i_fieldname = 'KOSTL'
+          IMPORTING
+            e_value     = lv_kostl.
+
+        SELECT SINGLE * FROM csks INTO @DATA(lv_check_csks) WHERE  kostl = @lv_kostl.
+
+        IF sy-subrc <> 0.
+
+          CALL METHOD rr_data_changed->add_protocol_entry
+            EXPORTING
+              i_msgid     = 'ZMM03'
+              i_msgno     = '000'
+              i_msgty     = 'E'
+              i_msgv1     = '输入的成本中心: '
+              i_msgv2     = lv_kostl
+              i_msgv3     = ' 非有效'
+              i_fieldname = ls_modi-fieldname
+              i_row_id    = ls_modi-row_id.
+
+          error_in_data = 'X'.
+
+        ENDIF.
+
+        READ TABLE gt_cskt INTO DATA(ls_cskt) WITH KEY kostl = lv_kostl.
+        IF sy-subrc = 0 .
+          CALL METHOD rr_data_changed->modify_cell
+            EXPORTING
+              i_row_id    = ls_modi-row_id
+              i_fieldname = 'KTEXT'
+              i_value     = ls_cskt-ktext.
+        ENDIF.
+
+      ELSEIF ls_modi-fieldname = 'POSID'.
+
+        CALL METHOD rr_data_changed->get_cell_value
+          EXPORTING
+            i_row_id    = ls_modi-row_id
+            i_fieldname = 'POSID'
+          IMPORTING
+            e_value     = lv_posid.
+
+        SELECT SINGLE * FROM prps INTO @DATA(lv_check_prps) WHERE  posid = @lv_posid.
+
+        IF sy-subrc <> 0.
+
+          CALL METHOD rr_data_changed->add_protocol_entry
+            EXPORTING
+              i_msgid     = 'ZMM03'
+              i_msgno     = '000'
+              i_msgty     = 'E'
+              i_msgv1     = '输入的WBS: '
+              i_msgv2     = lv_posid
+              i_msgv3     = ' 非有效'
+              i_fieldname = ls_modi-fieldname
+              i_row_id    = ls_modi-row_id.
+
+          error_in_data = 'X'.
+
+        ENDIF.
+
+        READ TABLE gt_prps INTO DATA(ls_prps) WITH KEY posid = lv_posid.
+        IF sy-subrc = 0 .
+          CALL METHOD rr_data_changed->modify_cell
+            EXPORTING
+              i_row_id    = ls_modi-row_id
+              i_fieldname = 'POST1'
+              i_value     = ls_prps-post1.
+        ENDIF.
+
+      ELSEIF ls_modi-fieldname = 'ZYDL'.
+
+        CALL METHOD rr_data_changed->get_cell_value
+          EXPORTING
+            i_row_id    = ls_modi-row_id
+            i_fieldname = 'ZYDL'
+          IMPORTING
+            e_value     = lv_zydl.
+
+        IF gs_ps011-zkkfylx IS INITIAL .
+
+          CALL METHOD rr_data_changed->add_protocol_entry
+            EXPORTING
+              i_msgid     = 'ZMM03'
+              i_msgno     = '000'
+              i_msgty     = 'E'
+              i_msgv1     = '扣款费用类型为空,用电量（度）或 用水量（吨）不能输入 '
+              i_fieldname = ls_modi-fieldname
+              i_row_id    = ls_modi-row_id.
+
+          error_in_data = 'X'.
+
+
+        ELSE.
+
+          IF lv_zydl IS NOT INITIAL.
+
+            IF gs_ps011-zkkfylx EQ '3'.
+
+              lv_zglfje = lv_zydl * '0.4' .
+
+              CALL METHOD rr_data_changed->modify_cell
+                EXPORTING
+                  i_row_id    = ls_modi-row_id
+                  i_fieldname = 'ZGLFJE'
+                  i_value     = lv_zglfje.
+
+
+            ELSEIF gs_ps011-zkkfylx EQ '2'.
+
+              CALL METHOD rr_data_changed->add_protocol_entry
+                EXPORTING
+                  i_msgid     = 'ZMM03'
+                  i_msgno     = '000'
+                  i_msgty     = 'E'
+                  i_msgv1     = '扣款费用类型为"水费"时，用电量（度）不能输入 '
+                  i_fieldname = ls_modi-fieldname
+                  i_row_id    = ls_modi-row_id.
+
+              error_in_data = 'X'.
+
+            ELSEIF gs_ps011-zkkfylx EQ '1'.
+              CALL METHOD rr_data_changed->add_protocol_entry
+                EXPORTING
+                  i_msgid     = 'ZMM03'
+                  i_msgno     = '000'
+                  i_msgty     = 'E'
+                  i_msgv1     = '扣款费用类型为"罚款"时，用电量（度）或 用水量（吨）不能输入 '
+                  i_fieldname = ls_modi-fieldname
+                  i_row_id    = ls_modi-row_id.
+
+              error_in_data = 'X'.
+
+            ELSEIF gs_ps011-zkkfylx EQ '4'.
+              CALL METHOD rr_data_changed->add_protocol_entry
+                EXPORTING
+                  i_msgid     = 'ZMM03'
+                  i_msgno     = '000'
+                  i_msgty     = 'E'
+                  i_msgv1     = '扣款费用类型为"制服"时，用电量（度）或 用水量（吨）不能输入 '
+                  i_fieldname = ls_modi-fieldname
+                  i_row_id    = ls_modi-row_id.
+
+              error_in_data = 'X'.
+
+            ELSEIF gs_ps011-zkkfylx EQ '5'.
+              CALL METHOD rr_data_changed->add_protocol_entry
+                EXPORTING
+                  i_msgid     = 'ZMM03'
+                  i_msgno     = '000'
+                  i_msgty     = 'E'
+                  i_msgv1     = '扣款费用类型为"卡证类"时，用电量（度）或 用水量（吨）不能输入 '
+                  i_fieldname = ls_modi-fieldname
+                  i_row_id    = ls_modi-row_id.
+
+              error_in_data = 'X'.
+
+            ELSEIF gs_ps011-zkkfylx EQ '6'.
+              CALL METHOD rr_data_changed->add_protocol_entry
+                EXPORTING
+                  i_msgid     = 'ZMM03'
+                  i_msgno     = '000'
+                  i_msgty     = 'E'
+                  i_msgv1     = '扣款费用类型为"饭堂宿舍"时，用电量（度）或 用水量（吨）不能输入 '
+                  i_fieldname = ls_modi-fieldname
+                  i_row_id    = ls_modi-row_id.
+
+              error_in_data = 'X'.
+
+            ENDIF.
+
+
+
+          ENDIF.
+
+        ENDIF.
+
+      ELSEIF ls_modi-fieldname = 'ZYSL'.
+
+        CALL METHOD rr_data_changed->get_cell_value
+          EXPORTING
+            i_row_id    = ls_modi-row_id
+            i_fieldname = 'ZYSL'
+          IMPORTING
+            e_value     = lv_zysl.
+
+
+        IF gs_ps011-zkkfylx IS INITIAL .
+
+          CALL METHOD rr_data_changed->add_protocol_entry
+            EXPORTING
+              i_msgid     = 'ZMM03'
+              i_msgno     = '000'
+              i_msgty     = 'E'
+              i_msgv1     = '扣款费用类型为空,用电量（度）或 用水量（吨）不能输入 '
+              i_fieldname = ls_modi-fieldname
+              i_row_id    = ls_modi-row_id.
+
+          error_in_data = 'X'.
+
+
+        ELSE.
+
+          IF lv_zysl IS NOT INITIAL.
+            IF gs_ps011-zkkfylx EQ '3'.
+
+              CALL METHOD rr_data_changed->add_protocol_entry
+                EXPORTING
+                  i_msgid     = 'ZMM03'
+                  i_msgno     = '000'
+                  i_msgty     = 'E'
+                  i_msgv1     = '扣款费用类型为"电费"时，用水量（吨）不能输入 '
+                  i_fieldname = ls_modi-fieldname
+                  i_row_id    = ls_modi-row_id.
+
+              error_in_data = 'X'.
+
+            ELSEIF gs_ps011-zkkfylx EQ '1'.
+              CALL METHOD rr_data_changed->add_protocol_entry
+                EXPORTING
+                  i_msgid     = 'ZMM03'
+                  i_msgno     = '000'
+                  i_msgty     = 'E'
+                  i_msgv1     = '扣款费用类型为"扣款"时，用电量（度）或用水量（吨）不能输入 '
+                  i_fieldname = ls_modi-fieldname
+                  i_row_id    = ls_modi-row_id.
+
+              error_in_data = 'X'.
+
+            ELSEIF gs_ps011-zkkfylx EQ '4'.
+              CALL METHOD rr_data_changed->add_protocol_entry
+                EXPORTING
+                  i_msgid     = 'ZMM03'
+                  i_msgno     = '000'
+                  i_msgty     = 'E'
+                  i_msgv1     = '扣款费用类型为"制服"时，用电量（度）或用水量（吨）不能输入 '
+                  i_fieldname = ls_modi-fieldname
+                  i_row_id    = ls_modi-row_id.
+
+              error_in_data = 'X'.
+
+            ELSEIF gs_ps011-zkkfylx EQ '5'.
+              CALL METHOD rr_data_changed->add_protocol_entry
+                EXPORTING
+                  i_msgid     = 'ZMM03'
+                  i_msgno     = '000'
+                  i_msgty     = 'E'
+                  i_msgv1     = '扣款费用类型为"卡证类"时，用电量（度）或用水量（吨）不能输入 '
+                  i_fieldname = ls_modi-fieldname
+                  i_row_id    = ls_modi-row_id.
+
+              error_in_data = 'X'.
+
+            ELSEIF gs_ps011-zkkfylx EQ '6'.
+              CALL METHOD rr_data_changed->add_protocol_entry
+                EXPORTING
+                  i_msgid     = 'ZMM03'
+                  i_msgno     = '000'
+                  i_msgty     = 'E'
+                  i_msgv1     = '扣款费用类型为"饭堂宿舍"时，用电量（度）或用水量（吨）不能输入 '
+                  i_fieldname = ls_modi-fieldname
+                  i_row_id    = ls_modi-row_id.
+
+              error_in_data = 'X'.
+
+            ENDIF.
+          ENDIF.
+
+        ENDIF.
+
+      ELSEIF ls_modi-fieldname = 'ZGLFJE'.
+
+        CALL METHOD rr_data_changed->get_cell_value
+          EXPORTING
+            i_row_id    = ls_modi-row_id
+            i_fieldname = 'ZGLFJE'
+          IMPORTING
+            e_value     = lv_zglfje.
+
+        IF gs_ps011-zkkfylx IS INITIAL OR gs_ps011-zkkfylx NE '3'.
+
+
+          CALL METHOD rr_data_changed->add_protocol_entry
+            EXPORTING
+              i_msgid     = 'ZMM03'
+              i_msgno     = '000'
+              i_msgty     = 'E'
+              i_msgv1     = '扣款费用类型非"电费"时,管理费不能输入 '
+              i_fieldname = ls_modi-fieldname
+              i_row_id    = ls_modi-row_id.
+
+          error_in_data = 'X'.
+
+
+        ENDIF.
+
+      ELSEIF ls_modi-fieldname = 'ZKKJE'.
+
+*        CALL METHOD rr_data_changed->modify_cell
+*          EXPORTING
+*            i_row_id    = ls_modi-row_id
+*            i_fieldname = 'ZKKJE'
+*            i_value     = lv_zkkje.
+        CALL METHOD rr_data_changed->get_cell_value
+          EXPORTING
+            i_row_id    = ls_modi-row_id
+            i_fieldname = 'ZKKJE'
+          IMPORTING
+            e_value     = lv_zkkje.
+
+      ENDIF.
+
+    ENDLOOP.
+
+  ENDIF.
+
+  IF error_in_data = 'X'.
+    CALL METHOD rr_data_changed->display_protocol.
+
+  ENDIF.
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*&      FORM  FRM_ALV_DOUBLECLICK
+*&---------------------------------------------------------------------*
+*       TEXT
+*----------------------------------------------------------------------*
+*      -->P_E_ROW  TEXT
+*      -->P_E_COLUMN  TEXT
+*      -->P_ES_ROW_NO  TEXT
+*----------------------------------------------------------------------*
+
+FORM frm_changed_finished USING gt_change TYPE lvc_t_modi
+                                 p_alv.
+  PERFORM frm_data_refresh USING g_grid_i.
+
+  PERFORM frm_refresh_alv USING g_grid_i.
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_DATA_REFRESH
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+
+FORM frm_data_refresh USING p_grid TYPE REF TO cl_gui_alv_grid.
+
+  CALL METHOD p_grid->register_edit_event
+    EXPORTING
+      i_event_id = cl_gui_alv_grid=>mc_evt_modified
+*  EXCEPTIONS
+*     error      = 1
+*     others     = 2
+    .
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+  CALL METHOD p_grid->register_edit_event
+    EXPORTING
+      i_event_id = cl_gui_alv_grid=>mc_evt_enter
+*  EXCEPTIONS
+*     error      = 1
+*     others     = 2
+    .
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*&      Module  ALV_REFRRSH  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE alv_refresh INPUT .
+  PERFORM frm_fill_fieldcat_i.
+  PERFORM frm_refresh_alv USING g_grid_i.
+ENDMODULE.
+
+
+
+*&---------------------------------------------------------------------*
+*& Form APPEND_MESSAGE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> P_2
+*&      --> LV_TEXT
+*&      <-- GT_MESSAGE
+*&      <-- <FS_ITEM>_LIGHT
+*&---------------------------------------------------------------------*
+FORM append_message  USING    VALUE(p_msgty)
+                              p_title
+                              p_index
+                              p_text
+                     CHANGING pt_message TYPE  usmd_t_message
+                              icon_a.
+
+
+  APPEND INITIAL LINE TO pt_message ASSIGNING FIELD-SYMBOL(<fs_msg>).
+  <fs_msg>-msgid = 'ZMSG'.
+  <fs_msg>-msgty = p_msgty.
+  <fs_msg>-msgno = '000'.
+  <fs_msg>-msgv1 = p_title.
+  <fs_msg>-msgv2 = p_index.
+  <fs_msg>-msgv3 = p_text.
+
+
+  IF p_msgty = 'E'.
+    icon_a = icon_red_light.
+  ELSEIF p_msgty = 'W'.
+    icon_a = icon_yellow_light.
+  ELSEIF p_msgty = 'S'.
+    icon_a = icon_green_light.
+  ENDIF.
+
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form POP_UP_MESSAGE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM pop_up_message .
+
+  CHECK gt_message[] IS NOT INITIAL.
+
+  CALL FUNCTION 'USMD_MESSAGE_POPUP'
+    EXPORTING
+      it_message        = gt_message
+      if_save_necessary = space.
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_GET_LIST
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_get_list.
+
+  DATA: lv_index TYPE numc5.
+  TYPES:BEGIN OF ty_kkje,
+          zdjbh TYPE ztps0011_fw-zdjbh,
+*          zskgs TYPE ztps0011_fw-zskgs,
+          zkkje TYPE ztps0011_fw-zkkje,
+        END OF ty_kkje.
+  DATA: lt_kkje TYPE TABLE OF ty_kkje,
+        ls_kkje TYPE ty_kkje.
+
+  CLEAR gt_dj_list[].
+
+  IF p_djbh IS NOT INITIAL.
+    SELECT * INTO TABLE @DATA(lt_0011) FROM ztps0011 WHERE zdjbh = @p_djbh AND zfwht IN @s_zfwht AND zsgdw IN @s_zsgdw AND zcjrq IN @s_zcjrq AND zcjry IN @s_zcjry AND zdjlx1 EQ '71'.
+  ELSE.
+    SELECT * INTO TABLE @lt_0011 FROM ztps0011 WHERE zfwht IN @s_zfwht AND zsgdw IN @s_zsgdw AND zcjrq IN @s_zcjrq AND zcjry IN @s_zcjry AND zdjlx1 EQ '71'.
+  ENDIF.
+
+  IF lt_0011 IS NOT INITIAL.
+    SELECT * INTO TABLE @DATA(lt_0011_fw) FROM ztps0011_fw FOR ALL ENTRIES IN @lt_0011 WHERE zdjbh = @lt_0011-zdjbh AND zskgs IN @s_zskgs AND kostl IN @s_kostl AND zdel = ''.
+  ENDIF.
+
+  SORT lt_0011 BY zdjbh.
+  SORT lt_0011_fw BY zdjbh.
+
+
+  IF lt_0011 IS NOT INITIAL AND lt_0011_fw IS NOT INITIAL.
+
+    CLEAR lv_index.
+    LOOP AT lt_0011 ASSIGNING FIELD-SYMBOL(<fs_0011>).
+      IF line_exists( lt_0011_fw[ zdjbh = <fs_0011>-zdjbh ] ).
+      ELSE.
+        DELETE lt_0011.
+        CONTINUE.
+      ENDIF.
+
+      APPEND INITIAL LINE TO gt_dj_list ASSIGNING FIELD-SYMBOL(<fs_dj_list>).
+      MOVE-CORRESPONDING <fs_0011> TO <fs_dj_list>.
+
+      ADD 1 TO lv_index.
+      <fs_dj_list>-index = lv_index.
+
+      LOOP AT lt_0011_fw ASSIGNING FIELD-SYMBOL(<fs_0011_fw>) WHERE zdjbh = <fs_0011>-zdjbh AND zhtbh = <fs_0011>-zhtbh.
+        ls_kkje-zdjbh = <fs_0011_fw>-zdjbh.
+*        ls_kkje-zskgs = <fs_0011_fw>-zskgs.
+        ls_kkje-zkkje = <fs_0011_fw>-zkkje.
+        COLLECT ls_kkje INTO lt_kkje.
+      ENDLOOP.
+
+      READ TABLE lt_kkje INTO ls_kkje WITH KEY zdjbh = <fs_0011>-zdjbh.
+      IF sy-subrc = 0.
+        <fs_dj_list>-zkkje = ls_kkje-zkkje.
+      ENDIF.
+
+
+*-----  取审批状态
+      IF  <fs_0011>-zspzt1 IS ASSIGNED AND <fs_0011>-zspzt1 IS NOT INITIAL.
+        PERFORM frm_get_domain_value_text USING <fs_0011>-zspzt1
+                                          'ZDSPZT'
+                                          <fs_0011>-zspzt2.
+        CHECK <fs_0011>-zspzt2 IS NOT INITIAL.
+        <fs_dj_list>-zspztt = <fs_0011>-zspzt2.
+      ENDIF.
+
+    ENDLOOP.
+
+
+  ENDIF.
+
+  CHECK gt_dj_list[] IS NOT INITIAL.
+*内存传值
+  EXPORT data = gt_dj_list TO MEMORY ID sy-cprog.
+
+ENDFORM.
+
+
+
+*&---------------------------------------------------------------------*
+*& Form FRM_ALV_OUTPUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM frm_alv_output.
+*   local data
+  DATA: lo_dock TYPE REF TO cl_gui_docking_container,
+        lo_cont TYPE REF TO cl_gui_container,
+        lo_alv  TYPE REF TO cl_salv_table.
+*
+* 从内存中接收输出表，然后释放内存
+  IMPORT data = gt_dj_list FROM MEMORY ID sy-cprog.
+  FREE MEMORY ID sy-cprog.
+
+*  检查数据不为空
+  CHECK gt_dj_list[] IS NOT INITIAL.
+
+*   Create a docking control at bottom
+  CHECK g_docking_container_k IS INITIAL.
+  CREATE OBJECT g_docking_container_k
+    EXPORTING
+      repid = sy-cprog
+      dynnr = sy-dynnr
+      ratio = 95
+      side  = cl_gui_docking_container=>dock_at_bottom
+      name  = 'DOCK_CONT'.
+  IF sy-subrc <> 0.
+    MESSAGE 'Error in the Docking control' TYPE 'S'.
+  ENDIF.
+
+
+  CREATE OBJECT gs_grid_list
+    EXPORTING
+      i_parent = g_docking_container_k.
+
+
+  PERFORM get_fieldcat .
+
+*    gs_layout_list-info_fname  = 'ROWCOLOR'.
+*    gs_layout_list-stylefname = 'CELLTAB'.
+*    gs_layout_list-ctab_fname = 'CELLTAB'.
+  gs_layout_list-cwidth_opt = 'A'.
+  gs_layout_list-zebra = space .
+*    gs_layout_list-sel_mode = 'D'.
+
+  PERFORM frm_exclude_tb_functions .
+
+*  CREATE OBJECT gc_event_handler3.
+
+  SET HANDLER gc_event_handler3->double_click FOR  gs_grid_list.
+  SET HANDLER gc_event_handler3->handle_toolbar FOR gs_grid_list .
+  SET HANDLER gc_event_handler3->handle_user_command FOR gs_grid_list .
+
+
+  CALL METHOD gs_grid_list->register_edit_event
+    EXPORTING
+      i_event_id = cl_gui_alv_grid=>mc_evt_modified.
+
+  l_variant-report = sy-repid.
+
+  CALL METHOD gs_grid_list->set_table_for_first_display
+    EXPORTING
+      is_variant                    = l_variant
+      i_save                        = 'A'
+      i_default                     = 'X'
+      is_layout                     = gs_layout_list
+      it_toolbar_excluding          = gt_uifunction3
+    CHANGING
+      it_outtab                     = gt_dj_list[]
+      it_fieldcatalog               = gt_fieldcat_list
+*     it_filter                     = gt_filter
+    EXCEPTIONS
+      invalid_parameter_combination = 1
+      program_error                 = 2
+      too_many_lines                = 3
+      OTHERS                        = 4.
+
+***   Create a SALV for output
+**  CHECK lo_alv IS INITIAL.
+**  TRY.
+***       Narrow Casting: To initialize custom container from
+***       docking container
+**      lo_cont ?= lo_dock."对接容器"
+***
+***       SALV Table Display on the Docking container
+**      CALL METHOD cl_salv_table=>factory
+**        EXPORTING
+**          list_display   = if_salv_c_bool_sap=>false
+**          r_container    = lo_cont
+**          container_name = 'DOCK_CONT'
+**        IMPORTING
+**          r_salv_table   = lo_alv
+**        CHANGING
+**          t_table        = gt_dj_list[].
+**    CATCH cx_salv_msg .
+**  ENDTRY.
+
+  CALL METHOD g_docking_container_k->set_position
+    EXPORTING
+      height            = 185
+      left              = 05
+      top               = 200
+      width             = 10000
+    EXCEPTIONS
+      cntl_error        = 1
+      cntl_system_error = 2
+      OTHERS            = 3.
+
+***   Pf status
+**  DATA: lo_functions TYPE REF TO cl_salv_functions_list.
+**  lo_functions = lo_alv->get_functions( ).
+**  lo_functions->set_default( abap_true ).
+***ALV 输出
+**  lo_alv->display( ).
+***
+
+ENDFORM.
+
+
+
+FORM get_fieldcat .
+  REFRESH: gt_fieldcat_list.
+
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'INDEX'   '序号' ''  ''   '5'.
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'ZDJLXT'  '单据类型' ''   '' '10'.
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'ZDJBH'   '单据号' ''   '' '20'.
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'ZHTBH'    '合同流水号' ''   '' '10'.
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'ZHTMC '  '合同名称' ''   '' '20'.
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'ZFWHT '  '法务合同号' ''   '' '20'.
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'ZSGDW '  '供应商' ''   '' '10'.
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'ZGFMC '  '供应商名称' ''   '' '30'.
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'ZKKJE '  '扣款金额（总）' ''   '' '17'.
+*  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'KOSTL  '  '成本中心' ''   '' '10'.
+*  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'KTEXT  '  '成本中心描述' ''   '' '20'.
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'ZCJRQ'    '单据创建日期' ''   '' '10'.
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'ZCJRY'   '单据创建人' ''   '' '10'.
+  set_fieldcat gs_fieldcat_list gt_fieldcat_list 'ZSPZTT'   '审批状态' ''   '' '10'.
+
+
+ENDFORM.                    " GET_FIELDCAT
+
+*&---------------------------------------------------------------------*
+*&      Form  FRM_EXCLUDE_TB_FUNCTIONS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM frm_exclude_tb_functions .
+
+  DATA ls_exclude TYPE ui_func.
+
+  CLEAR gt_uifunction.
+
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_maximum .
+*  APPEND ls_exclude TO gt_uifunction.
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_minimum .
+*  APPEND ls_exclude TO gt_uifunction   .
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_subtot .
+*  APPEND ls_exclude TO gt_uifunction   .
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_sum .
+*  APPEND ls_exclude TO gt_uifunction   .
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_average .
+*  APPEND ls_exclude TO gt_uifunction   .
+*  ls_exclude = cl_gui_alv_grid=>mc_mb_sum .
+*  APPEND ls_exclude TO gt_uifunction   .
+*  ls_exclude = cl_gui_alv_grid=>mc_mb_subtot .
+*  APPEND ls_exclude TO gt_uifunction   .
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_detail.
+*  APPEND ls_exclude TO gt_uifunction   .
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_filter.
+*  APPEND ls_exclude TO gt_uifunction   .
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_print.
+*  APPEND ls_exclude TO gt_uifunction   .
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_sort_asc.
+*  APPEND ls_exclude TO gt_uifunction   .
+*  ls_exclude = cl_gui_alv_grid=>mc_fc_sort_dsc.
+*  APPEND ls_exclude TO gt_uifunction   .
+  ls_exclude = cl_gui_alv_grid=>mc_fc_graph.
+  APPEND ls_exclude TO gt_uifunction   .
+  ls_exclude = cl_gui_alv_grid=>mc_fc_info.
+  APPEND ls_exclude TO gt_uifunction   .
+  ls_exclude = cl_gui_alv_grid=>mc_fc_views.
+  APPEND ls_exclude TO gt_uifunction   .
+  ls_exclude = cl_gui_alv_grid=>mc_fc_view_grid.
+  APPEND ls_exclude TO gt_uifunction   .
+  ls_exclude = cl_gui_alv_grid=>mc_fc_save_variant.
+  APPEND ls_exclude TO gt_uifunction   .
+  ls_exclude = cl_gui_alv_grid=>mc_fc_find_more.
+  APPEND ls_exclude TO gt_uifunction   .
+  ls_exclude = cl_gui_alv_grid=>mc_mb_variant.
+  APPEND ls_exclude TO gt_uifunction   .
+  ls_exclude = cl_gui_alv_grid=>mc_fc_find.
+  APPEND ls_exclude TO gt_uifunction   .
+  ls_exclude = cl_gui_alv_grid=>mc_mb_export.
+  APPEND ls_exclude TO gt_uifunction   .
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_copy_row.
+  APPEND ls_exclude TO gt_uifunction   .
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_insert_row.
+  APPEND ls_exclude TO gt_uifunction   .
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_delete_row.
+  APPEND ls_exclude TO gt_uifunction   .
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_append_row.
+  APPEND ls_exclude TO gt_uifunction   .
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_cut.
+  APPEND ls_exclude TO gt_uifunction   .
+
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_copy.
+  APPEND ls_exclude TO gt_uifunction   .
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_undo.
+  APPEND ls_exclude TO gt_uifunction   .
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_paste.
+  APPEND ls_exclude TO gt_uifunction   .
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_loc_paste_new_row.
+  APPEND ls_exclude TO gt_uifunction   .
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_check.
+  APPEND ls_exclude TO gt_uifunction   .
+
+  ls_exclude = cl_gui_alv_grid=>mc_fc_refresh.
+  APPEND ls_exclude TO gt_uifunction   .
+
+  gt_uifunction3 = gt_uifunction   .
+ENDFORM.                    " FRM_EXCLUDE_TB_FUNCTIONS
+
+
+*&---------------------------------------------------------------------*
+*& Form HANDLE_USER_COMMAND3
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> E_UCOMM
+*&---------------------------------------------------------------------*
+FORM handle_user_command3  USING   i_ucomm TYPE syucomm .
+
+**  CASE i_ucomm .
+**    WHEN 'SEL'.
+**      LOOP AT gt_dj_list ASSIGNING FIELD-SYMBOL(<fs_hsj>).
+**        <fs_hsj>-sel = 'X'.
+**      ENDLOOP.
+**
+**    WHEN 'UNSEL'.
+**      LOOP AT gt_dj_list ASSIGNING <fs_hsj>.
+**        <fs_hsj>-sel = ''.
+**      ENDLOOP.
+**
+**    WHEN 'FW'.
+**      PERFORM frm_fw.
+**
+**  ENDCASE.
+**
+**  CALL METHOD gs_grid_list->refresh_table_display
+**    EXCEPTIONS
+**      finished = 1
+**      OTHERS   = 2.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form HANDLE_TOOLBAR3
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> E_OBJECT
+*&      --> E_INTERACTIVE
+*&---------------------------------------------------------------------*
+FORM handle_toolbar3  USING   i_object TYPE REF TO cl_alv_event_toolbar_set
+                           i_inactive TYPE char1 .
+  DATA: ls_toolbar TYPE stb_button.
+
+***  CHECK sy-tcode = cns_dj AND g_ztype = '60'.  "  产值确认单
+***
+***  CLEAR ls_toolbar.
+***  MOVE 'SEL' TO ls_toolbar-function.                        "#EC NOTEXT
+***  MOVE 0 TO ls_toolbar-butn_type.
+***  MOVE icon_select_all  TO ls_toolbar-icon.
+***  MOVE '选择' TO ls_toolbar-quickinfo.
+***  MOVE '选择' TO ls_toolbar-text.
+***  MOVE  '' TO ls_toolbar-disabled.
+***  APPEND ls_toolbar TO i_object->mt_toolbar.
+***
+***  CLEAR ls_toolbar.
+***  MOVE 'UNSEL' TO ls_toolbar-function.                      "#EC NOTEXT
+***  MOVE 0 TO ls_toolbar-butn_type.
+***  MOVE icon_deselect_all TO ls_toolbar-icon.
+***  MOVE '取消选择' TO ls_toolbar-quickinfo.
+***  MOVE '取消选择' TO ls_toolbar-text.
+***  MOVE  '' TO ls_toolbar-disabled.
+***  APPEND ls_toolbar TO i_object->mt_toolbar.
+***
+***  CLEAR ls_toolbar.
+***  MOVE 'FW' TO ls_toolbar-function.                         "#EC NOTEXT
+***  MOVE 0 TO ls_toolbar-butn_type.
+***  MOVE icon_color TO ls_toolbar-icon.
+***  MOVE '服务确认' TO ls_toolbar-quickinfo.
+***  MOVE '服务确认' TO ls_toolbar-text.
+***  MOVE  '' TO ls_toolbar-disabled.
+***  APPEND ls_toolbar TO i_object->mt_toolbar.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  HANDEL_DOUBLE_CLICK3
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_E_ROW  text
+*      -->P_E_COLUMN  text
+*      -->P_ES_ROW_NO  text
+*----------------------------------------------------------------------*
+
+FORM handel_double_click3  USING  p_row TYPE lvc_s_row
+                                  p_column TYPE lvc_s_col
+                                  p_row_no.
+  DATA:lv_flg TYPE c.
+
+  READ TABLE gt_dj_list ASSIGNING FIELD-SYMBOL(<fs_dj_list>) INDEX p_row-index.
+
+  IF sy-subrc = 0.
+    IF p_modify EQ abap_true.
+      CHECK <fs_dj_list>-zdjbh IS ASSIGNED AND <fs_dj_list>-zdjbh IS NOT INITIAL.
+      gv_mode = gc_mode_change.
+      PERFORM frm_check USING 'MODIFY' <fs_dj_list>-zdjbh lv_flg.
+      CHECK lv_flg IS INITIAL.
+      PERFORM frm_get_log USING 'MODIFY' <fs_dj_list>-zdjbh.
+      CALL SCREEN 9000.
+    ELSEIF p_dis EQ abap_true.
+      CHECK <fs_dj_list>-zdjbh IS ASSIGNED AND <fs_dj_list>-zdjbh IS NOT INITIAL.
+      gv_mode = gc_mode_display.
+      PERFORM frm_check USING 'DIS' <fs_dj_list>-zdjbh lv_flg.
+      CHECK lv_flg IS INITIAL.
+      PERFORM frm_get_log USING 'DIS' <fs_dj_list>-zdjbh.
+      CALL SCREEN 9000.
+    ENDIF.
+  ENDIF.
+
+***  CALL METHOD gs_grid_list->refresh_table_display
+***    EXCEPTIONS
+***      finished = 1
+***      OTHERS   = 2.
+ENDFORM .
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  FRM_CHK_DATA_CHANGED
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*
+*----------------------------------------------------------------------*
+FORM  frm_chk_data_changed.
+* to react on custom events:
+  CALL METHOD cl_gui_cfw=>dispatch.
+
+* force ALV to copy the data from grid to the internal table
+*(events DATA_CHANGED and DATA_CHANGED_FINISHED)
+  CALL METHOD g_grid_i->check_changed_data.
+ENDFORM.
